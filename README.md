@@ -36,6 +36,10 @@ Note that the CollationLcid for the studied bacpac file is 1033 and that
 it is unknown what impact other collations might have on the parsing and
 interpreting of bacpack file data.
 
+Also note that this is based on an already un-zipped bacpac file. Writing
+tools to work with the zipped bacpac file was considered out of scope and
+not really necessary.
+
 # Testing
 
 ## System
@@ -165,7 +169,9 @@ The data in the bacpac file started out in Oracle and was migrated to
 MS SQL-Server. Therefore, using bp2ora to reload the data into a
 separate Oracle schema and comparing the results should serve as a
 reasonable test for determining how accurately the data was extracted
-from the bacpac file.
+from the bacpac file. Having done just that, and accounting for variations
+resulting from the migration (and migration testing) to SQL-Server, the
+data does appear to have been accurately extracted from the bacpac file.
 
 # Conclusions
 
@@ -182,3 +188,16 @@ from the bacpac file.
     workers could speed up the data extraction significantly (if needed
     or desired). Given enough CPU cores, this could move the process to
     be fully I/O constrained.
+
+# Next steps
+
+...if any.
+
+ * Test with more/different bacpac files.
+ * Add support for the missing/not-fully-implemented datatypes.
+ * Create a cmd to extract the DDL for creating tables.
+
+# FAQ
+
+ * Why bacpac files? Because that appears to the primary means of getting data into/out of Azure.
+ * But aren't bacpac files inconsistent? So I've read...
