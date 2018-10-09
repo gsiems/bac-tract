@@ -1,16 +1,17 @@
 # bac-tract
 
-A feasibility study in extracting data from MS SQL-Server bacpac files (BACpac-exTRACT)
+A feasibility study in parsing and extracting data from MS SQL-Server
+bacpac files (BACpac-exTRACT).
 
 Based on reverse engineering a single bacpac file, the results of this
-study do not not support all possible datatypes.
+study did not result in support for all possible datatypes. What this
+study does show is that, for the datatypes that are supported, it is
+both feasible and practical to extract table data directly from bacpac
+files.
 
-Possible datatypes can be grouped in three main categories:
- * datatypes that are not present in the bacpac,
- * datatypes that are present in the bacpac but do not have sufficent data determine how to process them, and
- * datatypes that appear to have sufficient data to be able to properly extract the data.
-
-Supported datatypes:
+Of the possible datatypes, those that exist in the bacpac file and
+appear to have sufficient data to be able to properly extract/translate
+the data consist of:
  * bigint
  * bit
  * char
