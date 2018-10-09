@@ -181,4 +181,4 @@ from the bacpac file.
  * Adding a work queue, sorted by descending table size, with multiple
     workers could speed up the data extraction significantly (if needed
     or desired). Given enough CPU cores, this could move the process to
-    be fully IO constrained.
+    be fully I/O constrained.
