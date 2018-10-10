@@ -36,6 +36,9 @@ Note that the CollationLcid for the studied bacpac file is 1033 and that
 it is unknown what impact other collations might have on the parsing and
 interpreting of bacpack file data.
 
+Also note that this is based on an already un-zipped bacpac file. Writing
+tools to work with the zipped bacpac file was considered out of scope and
+not really necessary.
 
 # Testing
 
@@ -45,93 +48,93 @@ Testing on an older Dell Optiplex 780 desktop
 
  * OS:
 
-    $ cat /etc/redhat-release
+        $ cat /etc/redhat-release
 
-        CentOS release 6.10 (Final)
+            CentOS release 6.10 (Final)
 
  * CPU:
 
-    $ cat /proc/cpuinfo | grep 'model name' | sort -u
+        $ cat /proc/cpuinfo | grep 'model name' | sort -u
 
-        Intel(R) Core(TM)2 Duo CPU     E8500  @ 3.16GHz
+            Intel(R) Core(TM)2 Duo CPU     E8500  @ 3.16GHz
 
-    $ cat /proc/cpuinfo | grep 'model name' | wc -l
+        $ cat /proc/cpuinfo | grep 'model name' | wc -l
 
-        2
+            2
 
  * RAM:
 
-    $ cat /proc/meminfo | grep MemTotal
+        $ cat /proc/meminfo | grep MemTotal
 
-        MemTotal:        3922536 kB
+            MemTotal:        3922536 kB
 
  * Disk:
 
-    320 GB, 7200 rpm, formatted as ext3
+        320 GB, 7200 rpm, formatted as ext3
 
 ## Bacpac
 
  * The bacpac file was/is actually a zip archive.
 
-    $ file $bacpac
+        $ file $bacpac
 
-        $bacpac: Zip archive data, at least v2.0 to extract
+            $bacpac: Zip archive data, at least v2.0 to extract
 
  * Rather than deal directly with the zip file, the file was first unzipped.
 
-    $ mkdir extracted
-    $ pushd extracted
-    $ unzip ../$bacpac
-    $ popd
+        $ mkdir extracted
+        $ pushd extracted
+        $ unzip ../$bacpac
+        $ popd
 
  * The majority of the bacpac is the exported data so ~1.2 GB of data available for extract.
 
-     $ du -sh $bacpac extracted
+         $ du -sh $bacpac extracted
 
-        90M     $bacpac
-        1.2G    extracted
+            90M     $bacpac
+            1.2G    extracted
 
  * There are 97 tables of interest totaling ~1.1 GB of data to extract.
 
-    $ ls extracted/Data/ | grep -P '\.(d|r)' | wc -l > tables
+        $ ls extracted/Data/ | grep -P '\.(d|r)' | wc -l > tables
 
-    $ wc -l tables
+        $ wc -l tables
 
-        97 tables
+            97 tables
 
 ## Performance
 
  * Using a simple file copy to establish a base line.
 
-    $ time cp -a extracted tmp
+        $ time cp -a extracted tmp
 
-        real    0m34.875s
-        user    0m0.047s
-        sys     0m2.608s
+            real    0m34.875s
+            user    0m0.047s
+            sys     0m2.608s
 
  * bp2csv
 
-    $ time ../bp2csv -f ../tables -b ../extracted
+        $ time ../bp2csv -f ../tables -b ../extracted
 
-        real    5m10.108s
-        user    5m13.833s
-        sys     0m3.986s
+            real    5m10.108s
+            user    5m13.833s
+            sys     0m3.986s
 
  * bp2pg
 
-    $ time ../bp2pg -f ../tables -b ../extracted
+        $ time ../bp2pg -f ../tables -b ../extracted
 
-        real    5m6.455s
-        user    5m3.661s
-        sys     0m5.394s
+            real    5m6.455s
+            user    5m3.661s
+            sys     0m5.394s
 
  * bp2ora
 
-    $ time ../bp2ora -f ../tables -b ../extracted
+        $ time ../bp2ora -f ../tables -b ../extracted
 
-        real    4m41.978s
-        user    4m49.621s
-        sys     0m4.542s
+            real    4m41.978s
+            user    4m49.621s
+            sys     0m4.542s
 
 It should be noted that bp2ora doesn't spend time on escaping
 characters while bp2csv and bp2pg do, which may explain the performance
@@ -144,21 +147,21 @@ at 1.3%.
 
 Typical ```top``` output looks like:
 
-    $ top
+        $ top
 
-        top - 09:15:05 up 5 days, 17:27,  9 users,  load average: 0.31, 0.12, 0.16
-        Tasks: 199 total,   1 running, 198 sleeping,   0 stopped,   0 zombie
-        Cpu(s): 58.3%us,  1.7%sy,  0.0%ni, 40.0%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st
-        Mem:   3922536k total,  3772840k used,   149696k free,   170944k buffers
-        Swap:  2046972k total,    18356k used,  2028616k free,  2171020k cached
+            top - 09:15:05 up 5 days, 17:27,  9 users,  load average: 0.31, 0.12, 0.16
+            Tasks: 199 total,   1 running, 198 sleeping,   0 stopped,   0 zombie
+            Cpu(s): 58.3%us,  1.7%sy,  0.0%ni, 40.0%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st
+            Mem:   3922536k total,  3772840k used,   149696k free,   170944k buffers
+            Swap:  2046972k total,    18356k used,  2028616k free,  2171020k cached
 
-          PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+              PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
 
-        32689 gsiems    20   0 54860  49m 1740 S 100.7  1.3   1:15.42 bp2csv
+            32689 gsiems    20   0 54860  49m 1740 S 100.7  1.3   1:15.42 bp2csv
 
-        12787 gsiems    20   0 53804  48m 1460 R 103.7  1.3   4:25.99 bp2pg
+            12787 gsiems    20   0 53804  48m 1460 R 103.7  1.3   4:25.99 bp2pg
 
-         8722 gsiems    20   0 55916  50m 1760 S 111.7  1.3   0:16.41 bp2ora
+             8722 gsiems    20   0 55916  50m 1760 S 111.7  1.3   0:16.41 bp2ora
 
 ## Accuracy
 
@@ -166,7 +169,9 @@ The data in the bacpac file started out in Oracle and was migrated to
 MS SQL-Server. Therefore, using bp2ora to reload the data into a
 separate Oracle schema and comparing the results should serve as a
 reasonable test for determining how accurately the data was extracted
-from the bacpac file.
+from the bacpac file. Having done just that, and accounting for variations
+resulting from the migration (and migration testing) to SQL-Server, the
+data does appear to have been accurately extracted from the bacpac file.
 
 # Conclusions
 
@@ -182,4 +187,17 @@ from the bacpac file.
  * Adding a work queue, sorted by descending table size, with multiple
     workers could speed up the data extraction significantly (if needed
     or desired). Given enough CPU cores, this could move the process to
-    be fully IO constrained.
+    be fully I/O constrained.
+
+# Next steps
+
+...if any.
+
+ * Test with more/different bacpac files.
+ * Add support for the missing/not-fully-implemented datatypes.
+ * Create a cmd to extract the DDL for creating tables.
+
+# FAQ
+
+ * Why bacpac files? Because that appears to the primary means of getting data into/out of Azure.
+ * But aren't bacpac files inconsistent? So I've read...
