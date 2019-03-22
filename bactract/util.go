@@ -61,13 +61,15 @@ func toRunes(b []byte) (ret []rune) {
 func stripTrailingNulls(b []byte) []byte {
 
 	i := len(b)
-	for {
-		if i == 1 || int(b[i-1]) != 0x00 {
-			break
+	if i > 0 {
+		for {
+			if i == 1 || int(b[i-1]) != 0x00 {
+				break
+			}
+			i--
 		}
-		i--
+		b = b[:i]
 	}
-	b = b[:i]
 
 	return b
 }
