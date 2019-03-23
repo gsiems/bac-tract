@@ -11,8 +11,8 @@ func readDecimal(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	debOut("Func readDecimal")
 
 	// Determine how many bytes to read
-	// TODO: can the default be determined by the scope/precision?
-	ss, err := r.readStoredSize(tc, 1, 2)
+	// TODO: can the default be determined by the scope/precision? Does it need to be?
+	ss, err := r.readStoredSize(tc, 1, 0)
 	if err != nil {
 		return ec, err
 	}
