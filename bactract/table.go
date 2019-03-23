@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+
 	//
 	"github.com/gsiems/go-read-wrap/srw"
 )
@@ -101,7 +102,7 @@ func (r *tReader) ReadNextRow() (row []ExtractedColumn, err error) {
 	for _, tc := range r.table.Columns {
 
 		if debugFlag {
-			debOut(fmt.Sprintf("%q %s %d, %d, %d, %v", tc.ColName, tc.DtStr, tc.Length, tc.Scale, tc.Precision, tc.IsNullable))
+			debOut(fmt.Sprintf("%q %s %d, %d, %d, %v", tc.ColName, tc.DtStr, tc.Length, tc.Precision, tc.Scale, tc.IsNullable))
 		}
 
 		fcn, ok := dt[tc.DataType]
@@ -126,7 +127,12 @@ func (r *tReader) ReadNextRow() (row []ExtractedColumn, err error) {
 
 			if debugFlag {
 				debOut(fmt.Sprintf("IsNull: %v", ec.IsNull))
-				debOut(fmt.Sprintf("Str: %s", ec.Str))
+				if len(ec.Str) > debugLen && debugLen > 10 {
+					s := fmt.Sprintf("%s ... %s", ec.Str[0:debugLen-6], ec.Str[len(ec.Str)-4:])
+					debOut(fmt.Sprintf("Str: %s", s))
+				} else {
+					debOut(fmt.Sprintf("Str: %s", ec.Str))
+				}
 				debOut("")
 			}
 

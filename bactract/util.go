@@ -88,13 +88,37 @@ func debOut(msg string) {
 func debHextOut(label string, bytes []byte) {
 	if debugFlag {
 		fmt.Printf("%s: ", label)
-		for _, b := range bytes {
-			if int(b) == 0 {
-				fmt.Print("0x00 ")
-			} else if int(b) < 0x10 {
-				fmt.Printf("0x0%x ", b)
-			} else {
-				fmt.Printf("0x%x ", b)
+		if len(bytes) > debugLen && debugLen > 10 {
+
+			for _, b := range bytes[0 : debugLen-6] {
+				if int(b) == 0 {
+					fmt.Print("0x00 ")
+				} else if int(b) < 0x10 {
+					fmt.Printf("0x0%x ", b)
+				} else {
+					fmt.Printf("0x%x ", b)
+				}
+			}
+			fmt.Print(" ... ")
+			for _, b := range bytes[len(bytes)-4:] {
+				if int(b) == 0 {
+					fmt.Print("0x00 ")
+				} else if int(b) < 0x10 {
+					fmt.Printf("0x0%x ", b)
+				} else {
+					fmt.Printf("0x%x ", b)
+				}
+			}
+
+		} else {
+			for _, b := range bytes {
+				if int(b) == 0 {
+					fmt.Print("0x00 ")
+				} else if int(b) < 0x10 {
+					fmt.Printf("0x0%x ", b)
+				} else {
+					fmt.Printf("0x%x ", b)
+				}
 			}
 		}
 		fmt.Println()

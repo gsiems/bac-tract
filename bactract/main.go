@@ -11,7 +11,8 @@ import (
 	//"strings"
 )
 
-const debugFlag = false
+const debugFlag = false // Whether or not to spew debugging information to STDOUT
+const debugLen = 30     // Trim the length of byte arrays and strings when outputting debug information
 
 // Note that this is an incomplete (I think) list of the possible
 // datatypes, however, ya gotta work with what ya got
