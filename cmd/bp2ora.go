@@ -7,13 +7,14 @@ import (
 	"bufio"
 	"bytes"
 	"flag"
-    "strings"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"runtime/pprof"
+	"strings"
+
 	//
 	bp "github.com/gsiems/bac-tract/bactract"
 )
@@ -137,6 +138,7 @@ func mkFile(t bp.Table, v params) {
 func mkLoaderCtl(t bp.Table) (ctl []byte, err error) {
 
 	ctl = append(ctl, []byte("LOAD DATA\n")...)
+	ctl = append(ctl, []byte("CHARACTERSET UTF8\n")...)
 	ctl = append(ctl, []byte("INFILE *\n")...)
 	ctl = append(ctl, []byte(fmt.Sprintf("TRUNCATE INTO TABLE %s\n", t.TabName))...)
 	ctl = append(ctl, []byte("FIELDS TERMINATED BY X'1C'\n")...)
