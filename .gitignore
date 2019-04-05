@@ -15,3 +15,8 @@
 *.csv
 *.dump
 *.ctl
+
+# Compiled cmd tools
+cmd/bp2csv
+cmd/bp2ora
+cmd/bp2pg
