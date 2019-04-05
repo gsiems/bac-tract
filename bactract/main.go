@@ -63,6 +63,9 @@ func New(baseDir string) (b Bacpac, err error) {
 // ExportedTables returns the list of data containing tables found in the bacpac
 func (b Bacpac) ExportedTables() (s []string, err error) {
 
+	// TODO: do we want to sort the list by size, largest tables first
+	// as this would benefit parallelizing the extraction process.
+
 	dir := catDir([]string{b.baseDir, "Data"})
 
 	dirs, err := ioutil.ReadDir(dir)
