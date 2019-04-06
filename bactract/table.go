@@ -8,14 +8,12 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-
-	//
-	"github.com/gsiems/go-read-wrap/srw"
+	"strings"
 )
 
 type tReader struct {
-	reader io.Reader
-	Rownum int
+	reader *buffFileReader
+	//Rownum int
 	table  Table
 }
 
@@ -41,8 +39,6 @@ type storedSize struct {
 // DataReader creates a multi-reader on the data files for the specified table
 func (t *Table) DataReader() (reader tReader, err error) {
 
-	var readers []io.Reader
-
 	files, err := ioutil.ReadDir(t.dataDir)
 	if err == os.ErrNotExist {
 		return reader, nil
@@ -51,17 +47,15 @@ func (t *Table) DataReader() (reader tReader, err error) {
 		return reader, err
 	}
 
+	var bcpFiles []string
 	for _, f := range files {
-		filename := catDir([]string{t.dataDir, f.Name()})
-		r, err := os.Open(filename)
-		if err != nil {
-			// TODO: do we want to expand on the err to include the file being opened?
-			return reader, err
+		if strings.HasSuffix(f.Name(), "BCP") {
+			filename := catDir([]string{t.dataDir, f.Name()})
+			bcpFiles = append(bcpFiles, filename)
 		}
-		readers = append(readers, r)
 	}
 
-	reader.reader = srw.BuffMultiReader(0, readers...)
+	reader.reader = BuffFileReader(0, bcpFiles)
 	reader.table = *t
 
 	return reader, err
@@ -153,6 +147,7 @@ func (r *tReader) readBytes(label string, n int) (b []byte, err error) {
 
 	b = make([]byte, n)
 	_, err = r.reader.Read(b)
+
 	debHextOut("Bytes", b)
 	return b, err
 }
