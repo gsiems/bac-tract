@@ -29,7 +29,7 @@ the data consist of:
  * smallmoney (parse only?)
  * text
  * tinyint
- * <strike>varbinary (parse only?)</strike>
+ * varbinary (parse only?)
  * varchar
 
 Note that the CollationLcid for the studied bacpac file is 1033 and that
