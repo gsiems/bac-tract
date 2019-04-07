@@ -30,7 +30,7 @@ func readSmallDatetime(r *tReader, tc TableColumn) (ec ExtractedColumn, err erro
 
 	// Assert: If not null then the stored size is the default
 	if ss.byteCount != defSz {
-		err = fmt.Errorf("%s invalid byteCount (%d vs %d) for column %q", fn, defSz, ss.byteCount, tc.ColName)
+		err = fmt.Errorf("%s byteCount too large for column %q (%d vs %d)", fn, tc.ColName, ss.byteCount, defSz)
 		return
 	}
 

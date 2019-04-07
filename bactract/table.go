@@ -14,7 +14,7 @@ import (
 type tReader struct {
 	reader *buffFileReader
 	//Rownum int
-	table  Table
+	table Table
 }
 
 // ExtractedColumn contains the data/metadata for a column extracted from a row of data.
@@ -132,7 +132,7 @@ func (r *tReader) ReadNextRow() (row []ExtractedColumn, err error) {
 
 			row = append(row, ec)
 		} else {
-			err = fmt.Errorf("ReadNextRow: No parser defined for %q column [%s]", tc.ColName, tc.DtStr)
+			err = fmt.Errorf("No parser defined for column %q (datatype %s)", tc.ColName, tc.DtStr)
 			return row, err
 		}
 	}
