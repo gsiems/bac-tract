@@ -23,7 +23,7 @@ func readVarchar(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	}
 
 	// Check the stored size vs. the column size
-	if ss.byteCount > tc.Length*2 {
+	if tc.Length > 0 && ss.byteCount > tc.Length*2 {
 		err = fmt.Errorf("%s byteCount too large for column %q (%d vs %d)", fn, tc.ColName, ss.byteCount, tc.Length*2)
 		return
 	}
