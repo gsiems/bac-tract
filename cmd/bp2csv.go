@@ -79,15 +79,15 @@ func doDump(v params) {
 	for _, table := range tables {
 		t, ok := model.Tables[table]
 		if ok {
-			hasVarBinary := false
+			hasBinary := false
 			for _, c := range t.Columns {
-				if c.DataType == bp.Varbinary {
-					hasVarBinary = true
+				if c.DataType == bp.Binary || c.DataType == bp.Varbinary {
+					hasBinary = true
 				}
 			}
 
-			if hasVarBinary {
-				log.Printf("Parsing \"%s.%s\" may fail as it has possible varbinary data.\n", t.Schema, t.TabName)
+			if hasBinary {
+				log.Printf("Warning: \"%s.%s\" has possible binary data.\n", t.Schema, t.TabName)
 			}
 			mkFile(t, v)
 		}
@@ -118,7 +118,7 @@ func mkFile(t bp.Table, v params) {
 			break
 		}
 		if err != nil {
-			log.Printf("Error parsing \"%s.%s\" [%d]: %s.\n", t.Schema, t.TabName, i, err)
+			log.Printf("Error: \"%s.%s\" (row %d): %s.\n", t.Schema, t.TabName, i, err)
 			break
 		}
 
@@ -134,7 +134,12 @@ func mkFile(t bp.Table, v params) {
 
 		var cols []string
 		for _, ec := range row {
-			cols = append(cols, ec.Str)
+
+			if ec.DataType == bp.Varbinary || ec.IsNull {
+				cols = append(cols, "")
+			} else {
+				cols = append(cols, ec.Str)
+			}
 		}
 		err = w.Write(cols)
 		dieOnErr(err)
