@@ -14,6 +14,7 @@ appear to have sufficient data to be able to properly extract/translate
 the data consist of:
 
  * bigint
+ * binary (parse only?)
  * bit
  * char
  * datetime2
