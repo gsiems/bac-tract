@@ -147,7 +147,7 @@ func (mr *buffFileReader) checkFillBuffer() {
 
 func (mr *buffFileReader) openNext() {
 
-    // ensure that the current file (if any) is closed
+	// ensure that the current file (if any) is closed
 	if mr.file != nil {
 		err := mr.file.Close()
 		if err != nil {
