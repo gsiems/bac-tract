@@ -1,29 +1,32 @@
 package bactract
 
+import "fmt"
+
 // readVarbinary reads the value for a varchar column
 func readVarbinary(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
-	debOut("Func readVarbinary")
+	fn := "readVarbinary"
+	debOut(fmt.Sprintf("Func %s", fn))
 
 	// Determine how many bytes to read
 	ss, err := r.readStoredSize(tc, 8, 0)
 	if err != nil {
-		return ec, err
+		return
 	}
 
 	// Check for nulls
 	ec.IsNull = ss.isNull
 	if ss.isNull {
-		return ec, err
+		return
 	}
 
 	// Read and translate the varbinary
 	// TODO
-	b, err := r.readBytes("readVarbinary", ss.byteCount)
+	b, err := r.readBytes(fn, ss.byteCount)
 	if err != nil {
-		return ec, err
+		return
 	}
 
 	ec.Str = string(b)
-	return ec, err
+	return
 }

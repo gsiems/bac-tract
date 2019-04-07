@@ -7,24 +7,32 @@ import (
 // readBigInt reads the value for an 8 byte integer column
 func readBigInt(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
-	debOut("Func readBigInt")
+	fn := "readBigInt"
+	defSz := 8
+	debOut(fmt.Sprintf("Func %s", fn))
 
 	// Determine how many bytes to read
-	ss, err := r.readStoredSize(tc, 1, 8)
+	ss, err := r.readStoredSize(tc, 1, defSz)
 	if err != nil {
-		return ec, err
+		return
 	}
 
 	// Check for nulls
 	ec.IsNull = ss.isNull
 	if ss.isNull {
-		return ec, err
+		return
+	}
+
+	// Assert: If not null then the stored size is the default
+	if ss.byteCount != defSz {
+		err = fmt.Errorf("%s invalid byteCount (%d vs %d) for column %q", fn, defSz, ss.byteCount, tc.ColName)
+		return
 	}
 
 	// Read and translate the integer
-	b, err := r.readBytes("readBigInt", ss.byteCount)
+	b, err := r.readBytes(fn, ss.byteCount)
 	if err != nil {
-		return ec, err
+		return
 	}
 
 	var z int64
@@ -34,5 +42,5 @@ func readBigInt(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
 	ec.Str = fmt.Sprint(z)
 
-	return ec, err
+	return
 }

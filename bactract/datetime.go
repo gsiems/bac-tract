@@ -19,28 +19,36 @@ import (
 // especially as I don't know if MS SQL-Sever accounts for leap seconds either.
 func readDatetime(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
-	debOut("Func readDatetime")
+	fn := "readDatetime"
+	defSz := 8
+	debOut(fmt.Sprintf("Func %s", fn))
 
 	// Determine how many bytes to read
 	var ss storedSize
-	ss, err = r.readStoredSize(tc, 1, 8)
+	ss, err = r.readStoredSize(tc, 1, defSz)
 	if err != nil {
-		return ec, err
+		return
 	}
 
 	// Check for nulls
 	ec.IsNull = ss.isNull
 	if ss.isNull {
-		return ec, err
+		return
+	}
+
+	// Assert: If not null then the stored size is the default
+	if ss.byteCount != defSz {
+		err = fmt.Errorf("%s invalid byteCount (%d vs %d) for column %q", fn, defSz, ss.byteCount, tc.ColName)
+		return
 	}
 
 	// Read the datetime
 	if ss.byteCount > 0 {
 
 		var b []byte
-		b, err = r.readBytes("readDatetime", ss.byteCount)
+		b, err = r.readBytes(fn, ss.byteCount)
 		if err != nil {
-			return ec, err
+			return
 		}
 
 		var days int32
@@ -61,5 +69,5 @@ func readDatetime(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 		ec.Str = dt.Format("2006-01-02 15:04:05")
 	}
 
-	return ec, err
+	return
 }

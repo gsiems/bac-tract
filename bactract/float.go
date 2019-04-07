@@ -9,31 +9,38 @@ import (
 // readFloat reads the value for a 4 or 8 byte float column
 func readFloat(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
-	debOut("Func readFloat")
+	fn := "readFloat"
+	debOut(fmt.Sprintf("Func %s", fn))
 
 	// Determine how many bytes to read
-	var defCount int
+	var defSz int
 	if tc.Precision <= 24 {
-		defCount = 4
+		defSz = 4
 	} else {
-		defCount = 8
+		defSz = 8
 	}
 
-	ss, err := r.readStoredSize(tc, 1, defCount)
+	ss, err := r.readStoredSize(tc, 1, defSz)
 	if err != nil {
-		return ec, err
+		return
 	}
 
 	// Check for nulls
 	ec.IsNull = ss.isNull
 	if ss.isNull {
-		return ec, err
+		return
+	}
+
+	// Assert: If not null then the stored size is the default
+	if ss.byteCount != defSz {
+		err = fmt.Errorf("%s invalid byteCount (%d vs %d) for column %q", fn, defSz, ss.byteCount, tc.ColName)
+		return
 	}
 
 	// Read and translate the integer
-	b, err := r.readBytes("readFloat", ss.byteCount)
+	b, err := r.readBytes(fn, ss.byteCount)
 	if err != nil {
-		return ec, err
+		return
 	}
 
 	var z uint64
@@ -52,5 +59,5 @@ func readFloat(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 		ec.Str = strings.Join([]string{s, "0"}, ".")
 	}
 
-	return ec, err
+	return
 }

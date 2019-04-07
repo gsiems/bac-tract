@@ -11,33 +11,41 @@ import (
 // one for days since 1900-01-01 and the other for minutes since midnight
 func readSmallDatetime(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
-	debOut("Func readSmallDatetime")
+	fn := "readSmallDatetime"
+	defSz := 4
+	debOut(fmt.Sprintf("Func %s", fn))
 
 	// Determine how many bytes to read
 	var ss storedSize
-	ss, err = r.readStoredSize(tc, 1, 4)
+	ss, err = r.readStoredSize(tc, 1, defSz)
 	if err != nil {
-		return ec, err
+		return
 	}
 
 	// Check for nulls
 	ec.IsNull = ss.isNull
 	if ss.isNull {
-		return ec, err
+		return
+	}
+
+	// Assert: If not null then the stored size is the default
+	if ss.byteCount != defSz {
+		err = fmt.Errorf("%s invalid byteCount (%d vs %d) for column %q", fn, defSz, ss.byteCount, tc.ColName)
+		return
 	}
 
 	if ss.byteCount > 0 {
 
 		var s, y []byte
 
-		y, err = r.readBytes("readSmallDatetime: dateBytes", 2)
+		y, err = r.readBytes(fmt.Sprintf("%s: dateBytes", fn), 2)
 		if err != nil {
-			return ec, err
+			return
 		}
 
-		s, err = r.readBytes("readSmallDatetime: timeBytes", 2)
+		s, err = r.readBytes(fmt.Sprintf("%s: timeBytes", fn), 2)
 		if err != nil {
-			return ec, err
+			return
 		}
 
 		var mins int
@@ -61,5 +69,5 @@ func readSmallDatetime(r *tReader, tc TableColumn) (ec ExtractedColumn, err erro
 
 	}
 
-	return ec, err
+	return
 }

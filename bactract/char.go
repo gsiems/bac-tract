@@ -1,28 +1,45 @@
 package bactract
 
+import (
+	"fmt"
+)
+
 // readChar reads the value for a character column
 func readChar(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
-	debOut("Func readChar")
+	fn := "readChar"
+	debOut(fmt.Sprintf("Func %s", fn))
 
 	// Determine how many bytes to read
 	ss, err := r.readStoredSize(tc, 2, 2*tc.Length)
 	if err != nil {
-		return ec, err
+		return
 	}
 
 	// Check for nulls
 	ec.IsNull = ss.isNull
 	if ss.isNull {
-		return ec, err
+		return
+	}
+
+	// Check the stored size vs. the column size
+	if ss.byteCount > tc.Length*2 {
+		err = fmt.Errorf("%s byteCount too large for column %q (%d vs %d)", fn, tc.ColName, ss.byteCount, tc.Length*2)
+		return
+	}
+
+	// Assert: The stored size is an even number of bytes
+	if ss.byteCount%2 != 0 {
+		err = fmt.Errorf("%s invalid byteCount (%d) for column %q", fn, ss.byteCount, tc.ColName)
+		return
 	}
 
 	// Read the chars
-	b, err := r.readBytes("readChar", ss.byteCount)
+	b, err := r.readBytes(fn, ss.byteCount)
 	if err != nil {
-		return ec, err
+		return
 	}
 
 	ec.Str = string(toRunes(b))
-	return ec, err
+	return
 }

@@ -9,20 +9,24 @@ import (
 // readDatetime2 reads the value for a datetime column.
 func readDatetime2(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
-	debOut("Func readDatetime2")
+	fn := "readDatetime2"
+	defSz := 8
+	debOut(fmt.Sprintf("Func %s", fn))
 
 	// Determine how many bytes to read
 	var ss storedSize
-	ss, err = r.readStoredSize(tc, 1, 8)
+	ss, err = r.readStoredSize(tc, 1, defSz)
 	if err != nil {
-		return ec, err
+		return
 	}
 
 	// Check for nulls
 	ec.IsNull = ss.isNull
 	if ss.isNull {
-		return ec, err
+		return
 	}
+
+	// TODO: can we assert the size?
 
 	// Read the datetime
 	if ss.byteCount > 0 {
@@ -31,14 +35,14 @@ func readDatetime2(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 		timeSize := ss.byteCount - dateSize
 
 		var s, y []byte
-		s, err = r.readBytes("readDatetime2: timeBytes", timeSize)
+		s, err = r.readBytes(fmt.Sprintf("%s: timeBytes", fn), timeSize)
 		if err != nil {
-			return ec, err
+			return
 		}
 
-		y, err = r.readBytes("readDatetime2: dateBytes", dateSize)
+		y, err = r.readBytes(fmt.Sprintf("%s: dateBytes", fn), dateSize)
 		if err != nil {
-			return ec, err
+			return
 		}
 
 		var ticks uint64
@@ -58,7 +62,7 @@ func readDatetime2(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 		var duration string
 		duration, err = calcDuration(tc.Scale, ticks)
 		if err != nil {
-			return ec, err
+			return
 		}
 
 		m, _ := time.ParseDuration(duration)
@@ -67,7 +71,7 @@ func readDatetime2(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 		ec.Str = dt.Format(calcFormat(tc.Scale, ticks))
 	}
 
-	return ec, err
+	return
 }
 
 func calcDuration(scale int, ticks uint64) (pds string, err error) {

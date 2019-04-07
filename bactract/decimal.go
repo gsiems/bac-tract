@@ -8,30 +8,31 @@ import (
 // readDecimal reads the value for a decimal column
 func readDecimal(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
-	debOut("Func readDecimal")
+	fn := "readDecimal"
+	debOut(fmt.Sprintf("Func %s", fn))
 
 	// Determine how many bytes to read
 	// TODO: can the default be determined by the scope/precision? Does it need to be?
 	ss, err := r.readStoredSize(tc, 1, 0)
 	if err != nil {
-		return ec, err
+		return
 	}
 
 	// Check for nulls
 	ec.IsNull = ss.isNull
 	if ss.isNull {
-		return ec, err
+		return
 	}
 
 	// Read and translate the decimal
-	b, err := r.readBytes("readDecimal", ss.byteCount)
+	b, err := r.readBytes(fn, ss.byteCount)
 	if err != nil {
-		return ec, err
+		return
 	}
 
 	ec.Str = parseDecimal(b)
 
-	return ec, err
+	return
 }
 
 func parseDecimal(b []byte) (str string) {

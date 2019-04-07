@@ -7,27 +7,35 @@ import (
 // readBit reads the value for a 1 byte integer column
 func readBit(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
-	debOut("Func readBit")
+	fn := "readBit"
+	defSz := 1
+	debOut(fmt.Sprintf("Func %s", fn))
 
 	// Determine how many bytes to read
-	ss, err := r.readStoredSize(tc, 1, 1)
+	ss, err := r.readStoredSize(tc, 1, defSz)
 	if err != nil {
-		return ec, err
+		return
 	}
 
 	// Check for nulls
 	ec.IsNull = ss.isNull
 	if ss.isNull {
-		return ec, err
+		return
+	}
+
+	// Assert: If not null then the stored size is the default
+	if ss.byteCount != defSz {
+		err = fmt.Errorf("%s invalid byteCount (%d vs %d) for column %q", fn, defSz, ss.byteCount, tc.ColName)
+		return
 	}
 
 	// Read and translate the integer
-	b, err := r.readBytes("readBit", ss.byteCount)
+	b, err := r.readBytes(fn, ss.byteCount)
 	if err != nil {
-		return ec, err
+		return
 	}
 
 	ec.Str = fmt.Sprint(b[0])
 
-	return ec, err
+	return
 }
