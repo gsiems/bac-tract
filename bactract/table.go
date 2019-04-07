@@ -36,7 +36,7 @@ type storedSize struct {
 	sizeBytes []byte
 }
 
-// DataReader creates a multi-reader on the data files for the specified table
+// DataReader creates a multi-file-reader on the data files for the specified table
 func (t *Table) DataReader() (reader tReader, err error) {
 
 	files, err := ioutil.ReadDir(t.dataDir)
@@ -132,7 +132,7 @@ func (r *tReader) ReadNextRow() (row []ExtractedColumn, err error) {
 
 			row = append(row, ec)
 		} else {
-			err = fmt.Errorf("ReadNextRow: No parser defined for %q", tc.ColName)
+			err = fmt.Errorf("ReadNextRow: No parser defined for %q column [%s]", tc.ColName, tc.DtStr)
 			return row, err
 		}
 	}
