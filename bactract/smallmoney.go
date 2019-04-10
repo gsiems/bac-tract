@@ -35,14 +35,18 @@ func readSmallMoney(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) 
 		return
 	}
 
-	// TODO
-
 	var z int32
 	for i, sb := range stripTrailingNulls(b) {
 		z |= int32(sb) << uint(8*i)
 	}
 
-	ec.Str = fmt.Sprint(z)
+	sb := []byte(fmt.Sprint(z))
+	j := len(sb) - 4
+	if j > 0 {
+		ec.Str = fmt.Sprintf("%s.%s.", string(sb[0:j]), string(sb[j:]))
+	} else if j == 0 {
+		ec.Str = fmt.Sprintf("0.%s.", string(sb))
+	}
 
 	return
 }
