@@ -98,21 +98,27 @@ func doDump(v params) {
 
 func mkFile(t bp.Table, v params) {
 
+	err := mkLoaderCtl(t)
+	dieOnErr(err)
+
+	err = mkLoaderDat(t, v)
+	dieOnErr(err)
+}
+
+// mkLoaderDat generates the data file for SQL*Loader
+func mkLoaderDat(t bp.Table, v params) (err error) {
+
 	colSep := []byte(string(0x1c))
-	recSep := []byte("\n")
+	recSep := []byte(" 0X1E")
+	newLine := []byte("\n")
 
 	r, err := t.DataReader()
 	dieOnErrf("DataReader failed: %q", err)
 
-	target := fmt.Sprintf("%s.%s.ctl", t.Schema, t.TabName)
+	target := fmt.Sprintf("%s.%s.dat", t.Schema, t.TabName)
 	f := openOutput(target)
 	defer deferredClose(f)
 	w := bufio.NewWriter(f)
-
-	var ctl []byte
-	ctl, err = mkLoaderCtl(t)
-	dieOnErr(err)
-	w.Write(ctl)
 
 	var i uint64
 	for {
@@ -141,17 +147,26 @@ func mkFile(t bp.Table, v params) {
 			}
 		}
 		w.Write(recSep)
+		w.Write(newLine)
 
 	}
 	w.Flush()
+	return
 }
 
 // mkLoaderCtl generates the essential Oracle SQL*Loader control file
-func mkLoaderCtl(t bp.Table) (ctl []byte, err error) {
+func mkLoaderCtl(t bp.Table) (err error) {
+
+	target := fmt.Sprintf("%s.%s.ctl", t.Schema, t.TabName)
+	f := openOutput(target)
+	defer deferredClose(f)
+	w := bufio.NewWriter(f)
+
+	var ctl []byte
 
 	ctl = append(ctl, []byte("LOAD DATA\n")...)
 	ctl = append(ctl, []byte("CHARACTERSET UTF8\n")...)
-	ctl = append(ctl, []byte("INFILE *\n")...)
+	ctl = append(ctl, []byte(fmt.Sprintf("INFILE %s.%s.dat \"str ' 0X1E'\"\n", t.Schema, t.TabName))...)
 	ctl = append(ctl, []byte(fmt.Sprintf("TRUNCATE INTO TABLE %s\n", t.TabName))...)
 	ctl = append(ctl, []byte("FIELDS TERMINATED BY X'1C'\n")...)
 	ctl = append(ctl, []byte("TRAILING NULLCOLS\n")...)
@@ -181,9 +196,11 @@ func mkLoaderCtl(t bp.Table) (ctl []byte, err error) {
 	}
 
 	ctl = append(ctl, []byte("\n)")...)
-	ctl = append(ctl, []byte("\nBEGINDATA\n")...)
 
-	return ctl, err
+	w.Write(ctl)
+	w.Flush()
+
+	return
 }
 
 // openOutput opens the appropriate target for writing output, or dies trying
