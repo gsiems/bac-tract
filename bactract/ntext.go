@@ -11,7 +11,7 @@ func readNText(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	debOut(fmt.Sprintf("Func %s", fn))
 
 	// Determine how many bytes to read
-	ss, err := r.readStoredSize(tc, 2, 0)
+	ss, err := r.readStoredSize(tc, 4, 0)
 	if err != nil {
 		return
 	}
