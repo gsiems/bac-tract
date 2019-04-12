@@ -166,7 +166,7 @@ func mkLoaderCtl(t bp.Table) (err error) {
 
 	ctl = append(ctl, []byte("LOAD DATA\n")...)
 	ctl = append(ctl, []byte("CHARACTERSET UTF8\n")...)
-	ctl = append(ctl, []byte(fmt.Sprintf("INFILE %s.%s.dat \"str ' 0X1E'\"\n", t.Schema, t.TabName))...)
+	ctl = append(ctl, []byte(fmt.Sprintf("INFILE %s.%s.dat \"str ' 0X1E\\n'\"\n", t.Schema, t.TabName))...)
 	ctl = append(ctl, []byte(fmt.Sprintf("TRUNCATE INTO TABLE %s\n", t.TabName))...)
 	ctl = append(ctl, []byte("FIELDS TERMINATED BY X'1C'\n")...)
 	ctl = append(ctl, []byte("TRAILING NULLCOLS\n")...)
