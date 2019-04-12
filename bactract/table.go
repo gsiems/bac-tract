@@ -162,14 +162,28 @@ func (r *tReader) readStoredSize(tc TableColumn, n, def int) (s storedSize, err 
 	if !tc.IsNullable && def > 0 {
 		// Just return the default for not-null columns
 		s.byteCount = def
-		return s, err
+		return
 	}
 
 	// So either the column is nullable or there is no default size--
 	// therfore read n bytes to determine how many data bytes to read
 	s.sizeBytes, err = r.readBytes("readStoredSize", n)
 	if err != nil {
-		return s, err
+		return
+	}
+
+	// All size bytes == 0xff indicates a null column
+	isnull := true
+	for i := 0; i < len(s.sizeBytes); i++ {
+		if s.sizeBytes[i] != 0xff {
+			isnull = false
+			break
+		}
+	}
+	if isnull {
+		s.isNull = tc.IsNullable
+		s.byteCount = 0
+		return
 	}
 
 	// Discard trailing nulls when calculating the storage byte count.
@@ -179,7 +193,7 @@ func (r *tReader) readStoredSize(tc TableColumn, n, def int) (s storedSize, err 
 	// byteCount calculation.
 	b := stripTrailingNulls(s.sizeBytes)
 	if len(b) == 0 {
-		return s, err
+		return
 	}
 
 	for i := 0; i < len(b); i++ {
@@ -187,12 +201,5 @@ func (r *tReader) readStoredSize(tc TableColumn, n, def int) (s storedSize, err 
 		s.isNull = false
 	}
 
-	// Determine is the difference between a null column and column that has an empty string
-	if b[0] == 0xff {
-		s.isNull = tc.IsNullable
-		s.byteCount = 0
-		return s, err
-	}
-
-	return s, err
+	return
 }
