@@ -55,11 +55,31 @@ func readString(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 		return
 	}
 
+	// HACK: having seen at least one case of a not null char column
+	// having size bytes anyhow. When this happens, the int of the first
+	// two "data bytes" would match the column size since that is what
+	// the really are. If the column length is under 9 then it's
+	// probably safe to assume that this is a case of "not null char with size bytes"
+	if tc.DataType == Char && !tc.IsNullable && ss.byteCount < 18 {
+		var z int16
+		for i, sb := range stripTrailingNulls(b[0:2]) {
+			z |= int16(sb) << uint(8*i)
+		}
+		if int(z) == len(b) {
+			nextb, cerr := r.readBytes(fn, 2)
+			if cerr != nil {
+				err = cerr
+				return
+			}
+			b = append(b[2:], nextb...)
+		}
+	}
+
 	// HACK: if the column is not null and the leading byte is 0x00 then
 	// we need might to unshift and read additional bytes until the first
 	// byte is no longer 0x00. This is to attempt to deal with those
 	// (so far few) tables that insert an extra '0x00 0x00 0x00 0x00 0x00 0x00'
-	// before the actual data of certain columns of each? record.
+	// before the actual data of certain columns.
 	if len(b) > 1 && b[0] == 0x00 {
 		for {
 			if b[0] != 0x00 {
