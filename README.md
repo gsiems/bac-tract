@@ -27,7 +27,7 @@ the data consist of:
  * real
  * smalldatetime
  * smallint
- * smallmoney (parse only?)
+ * smallmoney
  * text
  * tinyint
  * varbinary (parse only?)
@@ -173,6 +173,40 @@ reasonable test for determining how accurately the data was extracted
 from the bacpac file. Having done just that, and accounting for variations
 resulting from the migration (and migration testing) to SQL-Server, the
 data does appear to have been accurately extracted from the bacpac file.
+
+# Issues
+
+Current testing uses three different bacpac files for a toal of just
+over 200 tables; most small but some with millions, or tens of millions
+of rows. This mostly just works, however there have been some problems
+identified with parsing a handful of tables based on the few bacpac files
+available for testing.
+
+ 1. The first issue is of a not-null char column not parsing the same
+ as all the other not-null char columns. When a char column is defined
+ as not nullable then the typical behavior is to not insert the "size
+ bytes" data as it is not needed. However, in there is one table where
+ a not-null char column also has size bytes data. The code attempts
+ to, and so far succeeds, in mitigating this behavior.
+
+ 2. The second issue involves sometimes inserting six null (0x00) bytes
+ between the size bytes and data bytes of varchar columns. Since no
+ string data should start with null bytes this issue appears to have a
+ straight-forward mmitigation. This behavior has been observed in two
+ to three of the 200+ tables.
+
+ 3. The third issue appears to involve inserting a set of six 0xff
+ bytes before not-null integer columns. This behavior has been observed
+ in 3 of the 200+ tables. Programatically identifying and mitigating
+ this issue has, so far, proved more difficult than the first two
+ issues.
+
+It should be noted that thes bacpac files apparently do load correctly
+into MS SQL-Server such that these issues aren't visible to MS
+SQL-Server environments. Whether this is due to buggy behavior in the
+bacpac exporting code that the bacpac importing code is able work
+around, or whether this is intentional (anti-competitive?) behavior I
+cannot say although MS history impies that it could be either or both.
 
 # Conclusions
 
