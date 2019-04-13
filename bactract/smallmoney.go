@@ -43,9 +43,9 @@ func readSmallMoney(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) 
 	sb := []byte(fmt.Sprint(z))
 	j := len(sb) - 4
 	if j > 0 {
-		ec.Str = fmt.Sprintf("%s.%s.", string(sb[0:j]), string(sb[j:]))
+		ec.Str = fmt.Sprintf("%s.%s", string(sb[0:j]), string(sb[j:]))
 	} else if j == 0 {
-		ec.Str = fmt.Sprintf("0.%s.", string(sb))
+		ec.Str = fmt.Sprintf("0.%s", string(sb))
 	}
 
 	return
