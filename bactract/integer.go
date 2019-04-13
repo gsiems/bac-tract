@@ -8,7 +8,9 @@ import (
 func readInteger(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
 	fn := "readInteger"
-	debOut(fmt.Sprintf("Func %s", fn))
+	if debugFlag {
+		debOut(fmt.Sprintf("Func %s", fn))
+	}
 
 	// tinyint : 1, 1
 	// smallint : 1, 2
@@ -34,8 +36,8 @@ func readInteger(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	}
 
 	// Check for nulls
-	ec.IsNull = ss.isNull
 	if ss.isNull {
+		ec.IsNull = ss.isNull
 		return
 	}
 

@@ -11,7 +11,9 @@ func readReal(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
 	fn := "readReal"
 	defSz := 4
-	debOut(fmt.Sprintf("Func %s", fn))
+	if debugFlag {
+		debOut(fmt.Sprintf("Func %s", fn))
+	}
 
 	// Determine how many bytes to read
 	ss, err := r.readStoredSize(tc, 1, defSz)
@@ -20,8 +22,8 @@ func readReal(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	}
 
 	// Check for nulls
-	ec.IsNull = ss.isNull
 	if ss.isNull {
+		ec.IsNull = ss.isNull
 		return
 	}
 

@@ -36,6 +36,35 @@ type storedSize struct {
 	sizeBytes []byte
 }
 
+type fn func(r *tReader, tc TableColumn) (ec ExtractedColumn, err error)
+
+var dt = map[int]fn{
+	BigInt:        readInteger,
+	Binary:        readBinary,
+	Bit:           readBit,
+	Char:          readString,
+	Datetime2:     readDatetime2,
+	Datetime:      readDatetime,
+	Decimal:       readDecimal,
+	Float:         readFloat,
+	Int:           readInteger,
+	NText:         readNText,
+	Numeric:       readDecimal,
+	NVarchar:      readNVarchar,
+	Real:          readReal,
+	SmallDatetime: readSmallDatetime,
+	SmallInt:      readInteger,
+	SmallMoney:    readSmallMoney,
+	Text:          readString,
+	TinyInt:       readInteger,
+	Varbinary:     readVarbinary,
+	Varchar:       readString,
+	//Geography:        readGeography,
+	//NChar:            readNChar,
+	//SQLVariant:       readSQLVariant,
+	//UniqueIdentifier: readUniqueIdentifier,
+}
+
 // DataReader creates a multi-file-reader on the data files for the specified table
 func (t *Table) DataReader() (reader tReader, err error) {
 
@@ -64,35 +93,6 @@ func (t *Table) DataReader() (reader tReader, err error) {
 // ReadNextRow reads the next table row from the BCP file and ...
 func (r *tReader) ReadNextRow() (row []ExtractedColumn, err error) {
 
-	type fn func(r *tReader, tc TableColumn) (ec ExtractedColumn, err error)
-
-	dt := map[int]fn{
-		BigInt:        readInteger,
-		Binary:        readBinary,
-		Bit:           readBit,
-		Char:          readString,
-		Datetime2:     readDatetime2,
-		Datetime:      readDatetime,
-		Decimal:       readDecimal,
-		Float:         readFloat,
-		Int:           readInteger,
-		NText:         readNText,
-		Numeric:       readDecimal,
-		NVarchar:      readNVarchar,
-		Real:          readReal,
-		SmallDatetime: readSmallDatetime,
-		SmallInt:      readInteger,
-		SmallMoney:    readSmallMoney,
-		Text:          readString,
-		TinyInt:       readInteger,
-		Varbinary:     readVarbinary,
-		Varchar:       readString,
-		//Geography:        readGeography,
-		//NChar:            readNChar,
-		//SQLVariant:       readSQLVariant,
-		//UniqueIdentifier: readUniqueIdentifier,
-	}
-
 	for _, tc := range r.table.Columns {
 
 		if debugFlag {
@@ -105,7 +105,9 @@ func (r *tReader) ReadNextRow() (row []ExtractedColumn, err error) {
 			if err != nil {
 
 				if err == io.EOF {
-					debOut("\nEOF")
+					if debugFlag {
+						debOut("\nEOF")
+					}
 				}
 				return row, err
 			}
@@ -143,12 +145,15 @@ func (r *tReader) ReadNextRow() (row []ExtractedColumn, err error) {
 // readBytes reads the specified number of bytes from the reader
 func (r *tReader) readBytes(label string, n int) (b []byte, err error) {
 
-	debOut(fmt.Sprintf("%s: Attempting to read %d bytes", label, n))
-
+	if debugFlag {
+		debOut(fmt.Sprintf("%s: Attempting to read %d bytes", label, n))
+	}
 	b = make([]byte, n)
 	_, err = r.reader.Read(b)
 
-	debHextOut("Bytes", b)
+	if debugFlag {
+		debHextOut("Bytes", b)
+	}
 	return b, err
 }
 

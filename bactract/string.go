@@ -8,7 +8,9 @@ import (
 func readString(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
 	fn := "readString"
-	debOut(fmt.Sprintf("Func %s", fn))
+	if debugFlag {
+		debOut(fmt.Sprintf("Func %s", fn))
+	}
 
 	// varchar : 2, 0
 	// char : 2, length*2
@@ -30,8 +32,8 @@ func readString(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	}
 
 	// Check for nulls
-	ec.IsNull = ss.isNull
 	if ss.isNull {
+		ec.IsNull = ss.isNull
 		return
 	}
 

@@ -13,7 +13,9 @@ func readSmallDatetime(r *tReader, tc TableColumn) (ec ExtractedColumn, err erro
 
 	fn := "readSmallDatetime"
 	defSz := 4
-	debOut(fmt.Sprintf("Func %s", fn))
+	if debugFlag {
+		debOut(fmt.Sprintf("Func %s", fn))
+	}
 
 	// Determine how many bytes to read
 	var ss storedSize
@@ -23,8 +25,8 @@ func readSmallDatetime(r *tReader, tc TableColumn) (ec ExtractedColumn, err erro
 	}
 
 	// Check for nulls
-	ec.IsNull = ss.isNull
 	if ss.isNull {
+		ec.IsNull = ss.isNull
 		return
 	}
 

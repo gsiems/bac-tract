@@ -8,7 +8,9 @@ import (
 func readNVarchar(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
 	fn := "readNVarchar"
-	debOut(fmt.Sprintf("Func %s", fn))
+	if debugFlag {
+		debOut(fmt.Sprintf("Func %s", fn))
+	}
 
 	// Determine how many bytes to read
 	ss, err := r.readStoredSize(tc, 2, 0)
@@ -17,8 +19,8 @@ func readNVarchar(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	}
 
 	// Check for nulls
-	ec.IsNull = ss.isNull
 	if ss.isNull {
+		ec.IsNull = ss.isNull
 		return
 	}
 
