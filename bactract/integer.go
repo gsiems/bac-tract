@@ -51,6 +51,40 @@ func readInteger(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 		return
 	}
 
+	// WOULD BE HACK: if the column is defined as not null and the leading byte
+	// is 0xff then we need might to unshift and read additional bytes
+	// until the first byte is no longer 0xff. This is to attempt to deal
+	// with those (so far few) tables that insert an extra '0xff 0xff 0xff
+	// 0xff 0xff 0xff' into each? record. This is similar to the "prepended
+	// null bytes in [var]char data" but, so far, harder to work around/fix.
+	//
+	// Something kinda like the following could almost work except that
+	// it suffers false positives and results in breaking far more than
+	// it fixes. To actually work ther needs to be more to the pattern
+	// for identifying the inserted bytes.
+	/*
+		if tc.DataType == Int && !tc.IsNullable && b[0] == 0xff {
+			isnull := true
+			for i := 0; i < len(b); i++ {
+				if b[i] != 0xff {
+					isnull = false
+					break
+				}
+			}
+
+			if isnull {
+				x, cerr := r.readBytes("read_0xff", 6)
+				if cerr != nil {
+					err = cerr
+					return
+				}
+				if len(b) == 6 {
+					b = x[2:]
+				}
+			}
+		}
+		//*/
+
 	if tc.DataType == Int {
 		var z int32
 		for i, sb := range stripTrailingNulls(b) {
