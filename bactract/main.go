@@ -3,12 +3,8 @@
 package bactract
 
 import (
-	//"errors"
-	//"fmt"
-	//"io"
 	"io/ioutil"
 	"os"
-	//"strings"
 )
 
 const debugFlag = false // Whether or not to spew debugging information to STDOUT
