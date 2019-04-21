@@ -188,13 +188,14 @@ type DataSchemaModel struct {
 
 // TableColumn struct contains the definition for an exported database column
 type TableColumn struct {
-	ColName    string
-	DataType   int
-	DtStr      string
-	Length     int
-	Scale      int
-	Precision  int
-	IsNullable bool
+	ColName       string
+	DataType      int
+	DtStr         string
+	Length        int
+	Scale         int
+	Precision     int
+	IsNullable    bool
+	IsAdulterated bool // flag to indicate if the byte-stream for the column is supected of having been messed with
 }
 
 // Table struct contains the definition for an exported database table

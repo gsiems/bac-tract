@@ -62,9 +62,28 @@ func readInteger(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	//
 	// Something kinda like the following could almost work except that
 	// it suffers false positives and results in breaking far more than
-	// it fixes. To actually work ther needs to be more to the pattern
+	// it fixes. To actually work there needs to be more to the pattern
 	// for identifying the inserted bytes.
-	/*
+	//
+	// Actually, if the offending columns are hard-coded (only do the
+	// following for specific columns) so as to avoid the false positives,
+	// then the following appears to work quite well... We don't want to
+	// have to do that though.
+	//
+	// While probably not fool-proof one option would be to process a
+	// table like normal and, if/when an error occurs, to track back the
+	// columns to the preceeding not-null integer column, then re-run the
+	// table from the start (hard to backup the byte stream after all)
+	// and call this func with the "assumed to be offending" column name.
+	// To validate the goodness of fit for the "fix" might require
+	// tracking the original row/column that failed to determine, in case
+	// the tables still fails to fully parse, whether or not invoking the
+	// workaround for the "assumed to be offending" column made things
+	// better (failed later in the parse), worse (fails sooner), or
+	// made no difference (the failure point/mode does not change).
+	// Seems kinda hacky.
+
+	if tc.IsAdulterated {
 		if tc.DataType == Int && !tc.IsNullable && b[0] == 0xff {
 			isnull := true
 			for i := 0; i < len(b); i++ {
@@ -85,7 +104,7 @@ func readInteger(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 				}
 			}
 		}
-		//*/
+	}
 
 	if tc.DataType == Int {
 		var z int32
