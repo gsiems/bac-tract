@@ -3,7 +3,7 @@ package bactract
 // Read/parse the bacpac BCP data files.
 
 import (
-	//"errors"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -103,12 +103,18 @@ func (r *tReader) ReadNextRow() (row []ExtractedColumn, err error) {
 		if ok {
 			ec, err := fcn(r, tc)
 			if err != nil {
-
 				if err == io.EOF {
 					if debugFlag {
 						debOut("\nEOF")
 					}
 				}
+
+				// TODO?
+				// cache the offending row and attempt to determine if
+				// there is a preceeding, potentially offending column
+				// (see readInteger) to determine if another attempt at
+				// the can be taken.
+
 				return row, err
 			}
 
@@ -147,7 +153,19 @@ func (r *tReader) readBytes(label string, n int) (b []byte, err error) {
 
 	if debugFlag {
 		debOut(fmt.Sprintf("%s: Attempting to read %d bytes", label, n))
+		// NB recover added to help when debugging parsing errors
+		defer func() {
+			if r := recover(); r != nil {
+				err = errors.New(fmt.Sprintf("readBytes panic for n = %d: %s", n, r))
+				return
+			}
+		}()
 	}
+
+	if n == 0 {
+		return
+	}
+
 	b = make([]byte, n)
 	_, err = r.reader.Read(b)
 
