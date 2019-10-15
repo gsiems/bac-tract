@@ -233,6 +233,8 @@ func mkLoaderCtl(t bp.Table) (err error) {
 
 		if c.DtStr == "datetime" || c.DtStr == "smalldatetime" {
 			ctl = append(ctl, []byte(" DATE \"YYYY-MM-DD HH24:MI:SS\"")...)
+		} else if c.DtStr == "datetime2" {
+			ctl = append(ctl, []byte(" TIMESTAMP \"YYYY-MM-DD HH24:MI:SS.FF\"")...)
 		}
 
 		// if len too long then add char(len)
