@@ -20,10 +20,11 @@ import (
 )
 
 type params struct {
-	baseDir    string
-	tableName  string
-	tablesFile string
-	rowLimit   uint64
+	baseDir           string
+	tableName         string
+	tablesFile        string
+	colExceptionsFile string
+	rowLimit          uint64
 }
 
 func main() {
@@ -32,6 +33,7 @@ func main() {
 
 	flag.StringVar(&v.baseDir, "b", "", "The directory containing the unzipped bacpac file.")
 	flag.StringVar(&v.tableName, "t", "", "The table to extract data from. When not specified then extract all tables")
+	flag.StringVar(&v.colExceptionsFile, "e", "", "The column exceptions data file, should there be one")
 	flag.StringVar(&v.tablesFile, "f", "", "The file to read the list of tables to extract from, one table per line")
 	flag.Uint64Var(&v.rowLimit, "c", 0, "The number of rows to extract. When 0 extract all rows.")
 	var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
@@ -58,7 +60,7 @@ func doDump(v params) {
 
 	p, _ := bp.New(v.baseDir)
 
-	model, err := p.GetModel()
+	model, err := p.GetModel(v.colExceptionsFile)
 	dieOnErrf("GetModel failed: %q", err)
 
 	var tables []string

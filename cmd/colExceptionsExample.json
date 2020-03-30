@@ -1,0 +1,37 @@
+{
+	"columns": [
+		{
+			"columnName": "is_dropped",
+			"dataType": "bit",
+			"isAdulterated": false,
+			"isNullable": true,
+			"length": 0,
+			"precision": 0,
+			"scale": 0,
+			"schemaName": "dbo",
+			"tableName": "dt_foo"
+		},
+		{
+			"columnName": "is_dropped",
+			"dataType": "bit",
+			"isAdulterated": false,
+			"isNullable": true,
+			"length": 0,
+			"precision": 0,
+			"scale": 0,
+			"schemaName": "dbo",
+			"tableName": "dt_bar"
+		},
+		{
+			"columnName": "is_dropped",
+			"dataType": "bit",
+			"isAdulterated": false,
+			"isNullable": true,
+			"length": 0,
+			"precision": 0,
+			"scale": 0,
+			"schemaName": "dbo",
+			"tableName": "dt_baz"
+		}
+	]
+}

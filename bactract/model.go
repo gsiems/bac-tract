@@ -4,7 +4,9 @@ package bactract
 // needed for parsing the BCP data files.
 
 import (
+	"encoding/json"
 	"encoding/xml"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -186,6 +188,23 @@ type DataSchemaModel struct {
 	} `xml:"Model"`
 }
 
+type ColumnException struct {
+	SchemaName    string `json:"schemaName"`
+	TableName     string `json:"tableName"`
+	ColName       string `json:"columnName"`
+	DataType      int
+	DtStr         string `json:"dataType"`
+	Length        int    `json:"length"`
+	Scale         int    `json:"scale"`
+	Precision     int    `json:"precision"`
+	IsNullable    bool   `json:"isNullable"`
+	IsAdulterated bool   `json:"isAdulterated"`
+}
+
+type ColumnExceptions struct {
+	Columns []ColumnException
+}
+
 // TableColumn struct contains the definition for an exported database column
 type TableColumn struct {
 	ColName       string
@@ -268,7 +287,7 @@ func (bp Bacpac) ModelFileName() (n string) {
 
 // GetModel extracts the portions of the table definitions needed for
 // properly parsing/extracting the data from the BCP data files.
-func (bp Bacpac) GetModel() (m ExtractedModel, err error) {
+func (bp Bacpac) GetModel(ef string) (m ExtractedModel, err error) {
 
 	m.baseDir = bp.baseDir
 
@@ -300,10 +319,24 @@ func (bp Bacpac) GetModel() (m ExtractedModel, err error) {
 	// Grab the custom data types: name, schema, base type, length
 	types := extractUserTypes(doc)
 
+	var exceptions ColumnExceptions
+	if ef != "" {
+		var data []byte
+		data, err = ioutil.ReadFile(ef)
+		if err != nil {
+			return m, err
+		}
+
+		err = json.Unmarshal(data, &exceptions)
+		if err != nil {
+			return m, err
+		}
+	}
+
 	// Grab the table definition data, using the custom data types to
 	// translate to base types -- don't know if composite types are
 	// possible but if they are, I don't have any to test with anyhow...
-	rt := bp.getTables(doc, types)
+	rt := bp.getTables(doc, types, exceptions)
 
 	m.Tables = rt
 
@@ -311,9 +344,20 @@ func (bp Bacpac) GetModel() (m ExtractedModel, err error) {
 }
 
 // getTables extracts the table definitions from the schema model
-func (bp Bacpac) getTables(doc DataSchemaModel, userTypes map[string]UserDefinedType) (rt map[string]Table) {
+func (bp Bacpac) getTables(doc DataSchemaModel, userTypes map[string]UserDefinedType, exceptions ColumnExceptions) (rt map[string]Table) {
 
 	rt = make(map[string]Table)
+
+	var ex map[string]ColumnException
+	ex = make(map[string]ColumnException)
+	for _, v := range exceptions.Columns {
+		k := strings.Join([]string{v.SchemaName, v.TableName, v.ColName}, ".")
+		dt, ok := dtMap[v.DtStr]
+		if ok {
+			v.DataType = dt
+		}
+		ex[k] = v
+	}
 
 	for _, element := range doc.Model.Element {
 		if element.Type != "SqlTable" {
@@ -389,6 +433,20 @@ func (bp Bacpac) getTables(doc DataSchemaModel, userTypes map[string]UserDefined
 						col.IsNullable = false
 					}
 				}
+
+				// Check for column definition exceptions
+				k := strings.Join([]string{t.Schema, t.TabName, col.ColName}, ".")
+				v, ok := ex[k]
+				if ok {
+					col.DtStr = v.DtStr
+					col.DataType = v.DataType
+					col.Length = v.Length
+					col.Scale = v.Scale
+					col.Precision = v.Precision
+					col.IsNullable = v.IsNullable
+					col.IsAdulterated = v.IsAdulterated
+				}
+
 				t.Columns = append(t.Columns, col)
 			}
 		}
