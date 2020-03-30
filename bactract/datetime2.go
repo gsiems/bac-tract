@@ -28,8 +28,6 @@ func readDatetime2(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 		return
 	}
 
-	// TODO: can we assert the size?
-
 	// Read the datetime
 	if ss.byteCount > 0 {
 
@@ -78,17 +76,6 @@ func readDatetime2(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
 func calcDuration(scale int, ticks uint64) (pds string, err error) {
 
-	var m = map[int]int{
-		0: 1,
-		1: 100,
-		2: 10,
-		3: 1,
-		4: 100,
-		5: 10,
-		6: 1,
-		7: 100,
-	}
-
 	var u = map[int]string{
 		0: "s",
 		1: "ms",
@@ -100,19 +87,32 @@ func calcDuration(scale int, ticks uint64) (pds string, err error) {
 		7: "ns",
 	}
 
-	mult, ok := m[scale]
-	if !ok {
-		err = fmt.Errorf("Could not determine multiplier for datetime2 time duration. Unknown scale (%d)", scale)
-		return pds, err
-	}
-
 	units, ok := u[scale]
 	if !ok {
 		err = fmt.Errorf("Could not determine units for datetime2 time duration. Unknown scale (%d)", scale)
 		return pds, err
 	}
 
-	pd := ticks * uint64(mult)
+	var pd uint64
+
+	switch scale {
+	case 0:
+		pd = ticks / 1000000
+	case 1:
+		pd = ticks / 100000
+	case 2:
+		pd = ticks / 10000
+	case 3:
+		pd = ticks / 1000
+	case 4:
+		pd = ticks / 100
+	case 5:
+		pd = ticks / 10
+	case 6:
+		pd = ticks
+	case 7:
+		pd = ticks * 100
+	}
 
 	// 0 -> ticks * 1 s
 	// 1 -> ticks * 100 ms
