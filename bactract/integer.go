@@ -19,13 +19,14 @@ func readInteger(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
 	defSz := 4
 
-	if tc.DataType == Int {
-		defSz = 4
-	} else if tc.DataType == BigInt {
+	switch tc.DataType {
+	case BigInt:
 		defSz = 8
-	} else if tc.DataType == SmallInt {
+	case Int:
+		defSz = 4
+	case SmallInt:
 		defSz = 2
-	} else if tc.DataType == TinyInt {
+	case TinyInt:
 		defSz = 1
 	}
 
