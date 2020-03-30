@@ -12,17 +12,20 @@ func readString(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 		debOut(fmt.Sprintf("Func %s", fn))
 	}
 
-	// varchar : 2, 0
-	// char : 2, length*2
-	// text : 4, 0
-
 	defSz := 0
 	sz := 2
 
-	if tc.DataType == Text {
+	switch tc.DataType {
+	case Text:
 		sz = 4
-	} else if tc.DataType == Char {
+	case Char:
 		defSz = tc.Length * 2
+	case Varchar:
+		// If the size is not specified then it appears to be up to maxsize?
+		// Seems to require 8 bytes to store the size...
+		if tc.Length == 0 {
+			sz = 8
+		}
 	}
 
 	// Determine how many bytes to read
@@ -60,8 +63,10 @@ func readString(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	// HACK: having seen at least one case of a not null char column
 	// having size bytes anyhow. When this happens, the int of the first
 	// two "data bytes" would match the column size since that is what
-	// the really are. If the column length is under 9 then it's
-	// probably safe to assume that this is a case of "not null char with size bytes"
+	// they really are. If the column length is under 9 then it's
+	// probably safe to assume that this is a case of "not null char
+	// with size bytes". 9 bytes because the first printable character
+	// is the tab -- chr (9)
 	if tc.DataType == Char && !tc.IsNullable && ss.byteCount < 18 {
 		var z int16
 		for i, sb := range stripTrailingNulls(b[0:2]) {
@@ -78,9 +83,9 @@ func readString(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	}
 
 	// HACK: if the column is not null and the leading byte is 0x00 then
-	// we need might to unshift and read additional bytes until the first
-	// byte is no longer 0x00. This is to attempt to deal with those
-	// (so far few) tables that insert an extra '0x00 0x00 0x00 0x00 0x00 0x00'
+	// we need to unshift and read additional bytes until the first byte
+	// is no longer 0x00. This is to attempt to deal with those (so far
+	// few) tables that insert an extra '0x00 0x00 0x00 0x00 0x00 0x00'
 	// before the actual data of certain columns.
 	if len(b) > 1 && b[0] == 0x00 {
 		for {
