@@ -37,7 +37,14 @@ func readBit(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 		return
 	}
 
-	ec.Str = fmt.Sprint(b[0])
+	if len(b) > 0 {
+		switch b[len(b)-1] {
+		case 0x00:
+			ec.Str = "0"
+		case 0x01:
+			ec.Str = "1"
+		}
+	}
 
 	return
 }
