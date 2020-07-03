@@ -14,6 +14,20 @@ import (
 	"golang.org/x/net/html/charset"
 )
 
+/*
+Annotation []struct {
+    Text          string `xml:",chardata"`
+    Type          string `xml:"Type,attr"`
+    Name          string `xml:"Name,attr"`
+    Disambiguator string `xml:"Disambiguator,attr"`
+    Property      []struct {
+        Text  string `xml:",chardata"`
+        Name  string `xml:"Name,attr"`
+        Value string `xml:"Value,attr"`
+    } `xml:"Property"`
+} `xml:"Annotation"`
+*/
+
 // DataSchemaModel is for containing the contents of the model.xml
 // file. Structure generated using https://github.com/miku/zek/
 // ~/go/bin/zek -p < extracted/model.xml > model.go
@@ -217,12 +231,27 @@ type TableColumn struct {
 	IsAdulterated bool // flag to indicate if the byte-stream for the column is supected of having been messed with
 }
 
+type UniqueConstraint struct {
+	ConsName string
+	Columns  []string
+}
+
+type ForeignKey struct {
+	ConsName   string
+	Columns    []string
+	RefTable   string
+	RefColumns []string
+}
+
 // Table struct contains the definition for an exported database table
 type Table struct {
 	dataDir string
 	Schema  string
 	TabName string
+	PK      UniqueConstraint
 	Columns []TableColumn
+	FKs     []ForeignKey
+	Unique  []UniqueConstraint
 }
 
 // UserDefinedType struct contains the definition for an exported user
@@ -316,9 +345,6 @@ func (bp Bacpac) GetModel(ef string) (m ExtractedModel, err error) {
 	m.DspName = doc.DspName
 	m.CollationCaseSensitive = doc.CollationCaseSensitive == "True"
 
-	// Grab the custom data types: name, schema, base type, length
-	types := extractUserTypes(doc)
-
 	var exceptions ColumnExceptions
 	if ef != "" {
 		var data []byte
@@ -336,15 +362,15 @@ func (bp Bacpac) GetModel(ef string) (m ExtractedModel, err error) {
 	// Grab the table definition data, using the custom data types to
 	// translate to base types -- don't know if composite types are
 	// possible but if they are, I don't have any to test with anyhow...
-	rt := bp.getTables(doc, types, exceptions)
+	rt := bp.extractTables(doc, exceptions)
 
 	m.Tables = rt
 
 	return m, err
 }
 
-// getTables extracts the table definitions from the schema model
-func (bp Bacpac) getTables(doc DataSchemaModel, userTypes map[string]UserDefinedType, exceptions ColumnExceptions) (rt map[string]Table) {
+// extractTables extracts the table definitions from the schema model
+func (bp Bacpac) extractTables(doc DataSchemaModel, exceptions ColumnExceptions) (rt map[string]Table) {
 
 	rt = make(map[string]Table)
 
@@ -359,6 +385,14 @@ func (bp Bacpac) getTables(doc DataSchemaModel, userTypes map[string]UserDefined
 		ex[k] = v
 	}
 
+	// Grab the custom data types: name, schema, base type, length
+	userTypes := extractUserTypes(doc)
+
+	// Grab the primary keys, foreign keys, and unique constraints
+	pks := extractPrimaryKeys(doc)
+	fks := extractForeignKeys(doc)
+	ucs := extractUniqueConstraints(doc)
+
 	for _, element := range doc.Model.Element {
 		if element.Type != "SqlTable" {
 			continue
@@ -366,9 +400,25 @@ func (bp Bacpac) getTables(doc DataSchemaModel, userTypes map[string]UserDefined
 
 		var t Table
 
-		tokens := strings.Split(element.Name, ".")
-		t.Schema = strings.Trim(tokens[0], "[]")
-		t.TabName = strings.Trim(tokens[1], "[]")
+		qtn := element.Name
+
+		pk, ok := pks[qtn]
+		if ok {
+			t.PK = pk
+		}
+
+		fk, ok := fks[qtn]
+		if ok {
+			t.FKs = fk
+		}
+
+		uc, ok := ucs[qtn]
+		if ok {
+			t.Unique = uc
+		}
+
+		t.Schema = extractQNToken(qtn, 0)
+		t.TabName = extractQNToken(qtn, 1)
 
 		dd := strings.Join([]string{t.Schema, t.TabName}, ".")
 		t.dataDir = catDir([]string{bp.baseDir, "Data", dd})
@@ -377,14 +427,15 @@ func (bp Bacpac) getTables(doc DataSchemaModel, userTypes map[string]UserDefined
 			if relationship.Name != "Columns" {
 				continue
 			}
+
 			for _, entry := range relationship.Entry {
 				if entry.Element.Type != "SqlSimpleColumn" {
 					continue
 				}
 
 				var col TableColumn
-				tokens := strings.Split(entry.Element.Name, ".")
-				col.ColName = strings.Trim(tokens[2], "[]")
+
+				col.ColName = extractQNToken(entry.Element.Name, 2)
 				col.IsNullable = true
 
 				for _, re := range entry.Element.Relationship.Entry {
@@ -396,7 +447,7 @@ func (bp Bacpac) getTables(doc DataSchemaModel, userTypes map[string]UserDefined
 					// datatype is a user defined datatype then default
 					// to the values defined for the user defined datatype
 					n := re.Element.Relationship.Entry.References.Name
-					col.DtStr = strings.Replace(strings.Trim(n, "[]"), "].[", ".", -1)
+					col.DtStr = normalizeQN(n)
 
 					ut, ok := userTypes[col.DtStr]
 					if ok {
@@ -410,27 +461,33 @@ func (bp Bacpac) getTables(doc DataSchemaModel, userTypes map[string]UserDefined
 					}
 
 					for _, p := range re.Element.Property {
-						if p.Name == "Length" {
+						switch p.Name {
+						case "Length":
 							col.Length, _ = toInt([]byte(p.Value))
-						} else if p.Name == "Scale" {
+						case "Scale":
 							col.Scale, _ = toInt([]byte(p.Value))
-						} else if p.Name == "Precision" {
+						case "Precision":
 							col.Precision, _ = toInt([]byte(p.Value))
-						} else if p.Name == "IsNullable" && p.Value == "False" {
-							col.IsNullable = false
+						case "IsNullable":
+							if p.Value == "False" {
+								col.IsNullable = false
+							}
 						}
 					}
 				}
 
 				for _, p := range entry.Element.Property {
-					if p.Name == "Length" {
+					switch p.Name {
+					case "Length":
 						col.Length, _ = toInt([]byte(p.AttrValue))
-					} else if p.Name == "Scale" {
+					case "Scale":
 						col.Scale, _ = toInt([]byte(p.AttrValue))
-					} else if p.Name == "Precision" {
+					case "Precision":
 						col.Precision, _ = toInt([]byte(p.AttrValue))
-					} else if p.Name == "IsNullable" && p.AttrValue == "False" {
-						col.IsNullable = false
+					case "IsNullable":
+						if p.AttrValue == "False" {
+							col.IsNullable = false
+						}
 					}
 				}
 
@@ -485,28 +542,31 @@ func extractUserTypes(doc DataSchemaModel) (rt map[string]UserDefinedType) {
 		}
 
 		var t UserDefinedType
-		t.Name = strings.Replace(strings.Trim(element.Name, "[]"), "].[", ".", -1)
+		t.Name = normalizeQN(element.Name)
 		t.IsNullable = true
 
 		for _, p := range element.Property {
-			if p.Name == "Length" {
-				len, _ := toInt([]byte(p.AttrValue))
-				t.Length = len
-			} else if p.Name == "Precision" {
+			switch p.Name {
+			case "Length":
+				t.Length, _ = toInt([]byte(p.AttrValue))
+			case "Precision":
 				t.Precision, _ = toInt([]byte(p.AttrValue))
-			} else if p.Name == "Scale" {
+			case "Scale":
 				t.Scale, _ = toInt([]byte(p.AttrValue))
-			} else if p.Name == "IsNullable" && p.AttrValue == "False" {
-				t.IsNullable = false
+			case "IsNullable":
+				if p.AttrValue == "False" {
+					t.IsNullable = false
+				}
 			}
 		}
 
 		for _, r := range element.Relationship {
 			for _, entry := range r.Entry {
-				if r.Name == "Schema" {
-					t.Schema = strings.Trim(entry.References.Name, "[]")
-				} else if r.Name == "Type" {
-					t.DtStr = strings.Replace(strings.Trim(entry.References.Name, "[]"), "].[", ".", -1)
+				switch r.Name {
+				case "Schema":
+					t.Schema = normalizeQN(entry.References.Name)
+				case "Type":
+					t.DtStr = normalizeQN(entry.References.Name)
 					t.DataType = dtMap[t.DtStr]
 				}
 			}
@@ -514,4 +574,161 @@ func extractUserTypes(doc DataSchemaModel) (rt map[string]UserDefinedType) {
 		rt[t.Name] = t
 	}
 	return rt
+}
+
+// extractPrimaryKeys extracts the primary keys from the schema model
+func extractPrimaryKeys(doc DataSchemaModel) (pks map[string]UniqueConstraint) {
+
+	pks = make(map[string]UniqueConstraint)
+
+	for _, element := range doc.Model.Element {
+		if element.Type != "SqlPrimaryKeyConstraint" {
+			continue
+		}
+
+		var pk UniqueConstraint
+		var key string
+
+		if element.Name != "" {
+			pk.ConsName = extractQNToken(element.Name, 1)
+		} else {
+			for _, r := range element.Annotation {
+				if r.Type == "SqlInlineConstraintAnnotation" && r.Name != "" {
+					pk.ConsName = extractQNToken(r.Name, 1)
+				}
+			}
+		}
+
+		for _, r := range element.Relationship {
+			switch r.Name {
+			case "ColumnSpecifications":
+				for _, e := range r.Entry {
+					if e.Element.Type == "SqlIndexedColumnSpecification" {
+						if e.Element.Relationship.Name == "Column" {
+							c := extractQNToken(e.Element.Relationship.Entry[0].References.Name, 2)
+							pk.Columns = append(pk.Columns, c)
+						}
+					}
+				}
+			case "DefiningTable":
+				e := r.Entry[0]
+				key = e.References.Name
+			}
+		}
+
+		if key != "" {
+			pks[key] = pk
+		}
+	}
+
+	return pks
+}
+
+// extractForeignKeys extracts the foreign keys from the schema model
+func extractForeignKeys(doc DataSchemaModel) (fks map[string][]ForeignKey) {
+
+	fks = make(map[string][]ForeignKey)
+
+	for _, element := range doc.Model.Element {
+		if element.Type != "SqlForeignKeyConstraint" {
+			continue
+		}
+
+		var fk ForeignKey
+		var key string
+
+		if element.Name != "" {
+			fk.ConsName = extractQNToken(element.Name, 1)
+		} else {
+			for _, r := range element.Annotation {
+				if r.Type == "SqlInlineConstraintAnnotation" && r.Name != "" {
+					fk.ConsName = extractQNToken(r.Name, 1)
+				}
+			}
+		}
+
+		for _, r := range element.Relationship {
+			switch r.Name {
+			case "Columns":
+				for _, e := range r.Entry {
+					fk.Columns = append(fk.Columns, extractQNToken(e.References.Name, 2))
+				}
+			case "DefiningTable":
+				e := r.Entry[0]
+				key = e.References.Name
+			case "ForeignColumns":
+				for _, e := range r.Entry {
+					fk.RefColumns = append(fk.RefColumns, extractQNToken(e.References.Name, 2))
+				}
+			case "ForeignTable":
+				e := r.Entry[0]
+				fk.RefTable = normalizeQN(e.References.Name)
+			}
+		}
+
+		if key != "" {
+			fks[key] = append(fks[key], fk)
+		}
+	}
+
+	return fks
+}
+
+// extractUniqueConstraints extracts the non-primary key unique constraints from the schema model
+func extractUniqueConstraints(doc DataSchemaModel) (uniq map[string][]UniqueConstraint) {
+
+	uniq = make(map[string][]UniqueConstraint)
+
+	for _, element := range doc.Model.Element {
+		if element.Type != "SqlUniqueConstraint" {
+			continue
+		}
+
+		var u UniqueConstraint
+		var key string
+
+		if element.Name != "" {
+			u.ConsName = extractQNToken(element.Name, 1)
+		}
+
+		for _, r := range element.Relationship {
+			switch r.Name {
+			case "ColumnSpecifications":
+				for _, e := range r.Entry {
+					if e.Element.Type == "SqlIndexedColumnSpecification" {
+						if e.Element.Relationship.Name == "Column" {
+							c := extractQNToken(e.Element.Relationship.Entry[0].References.Name, 2)
+							u.Columns = append(u.Columns, c)
+						}
+					}
+				}
+			case "DefiningTable":
+				e := r.Entry[0]
+				key = e.References.Name
+			}
+		}
+
+		if key != "" {
+			uniq[key] = append(uniq[key], u)
+		}
+	}
+
+	return uniq
+}
+
+// extractQNToken tokenizes the supplied qualified name and returns token[i]
+func extractQNToken(qn string, i int) (s string) {
+	if qn != "" {
+		tokens := strings.Split(qn, "].[")
+		if len(tokens) >= i {
+			s = strings.Trim(tokens[i], "[]")
+		}
+	}
+	return s
+}
+
+// normalizeQN "normalises" the supplied qualified name
+func normalizeQN(qn string) (s string) {
+	s = strings.Replace(strings.Trim(qn, "[]"), "].[", ".", -1)
+	return s
 }
