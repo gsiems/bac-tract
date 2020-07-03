@@ -56,7 +56,7 @@ func doDump(v params) {
 
 	p, _ := bp.New(v.baseDir)
 
-	model, err := p.GetModel()
+	model, err := p.GetModel("")
 	dieOnErrf("GetModel failed: %q", err)
 
 	var tables []string
