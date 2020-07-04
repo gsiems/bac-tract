@@ -33,8 +33,8 @@ func main() {
 	var dialect string
 
 	flag.StringVar(&v.baseDir, "b", "", "The directory containing the unzipped bacpac file.")
-	flag.StringVar(&dialect, "d", "", "The DDL dialect to output [Ora|Pg].")
-	flag.StringVar(&v.tableName, "t", "", "The table to generate the Oracle CREATE TABLE command for. When not specified then generate the DDL for all tables.")
+	flag.StringVar(&dialect, "d", "Std", "The DDL dialect to output [Ora|Pg|Std].")
+	flag.StringVar(&v.tableName, "t", "", "The table to generate the CREATE TABLE command for. When not specified then generate the DDL for all tables.")
 	flag.StringVar(&v.tablesFile, "f", "", "The file to read the list of tables to extract from, one table per line")
 	var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
