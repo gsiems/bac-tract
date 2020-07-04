@@ -1,15 +1,110 @@
 # bac-tract
 
-A feasibility study in parsing and extracting data from MS SQL-Server
-bacpac files (BACpac-exTRACT).
+Extract data from MS SQL-Server bacpac files (BACpac-exTRACT).
 
-Based on reverse engineering a single bacpac file, the results of this
-study did not result in support for all possible datatypes. What this
-study does show is that, for the datatypes that are supported, it is
-both feasible and practical to extract table data directly from bacpac
-files.
+A bacpac file is a means of getting data out of Azure MS SQL-Server instances.
 
-Of the possible datatypes, those that exist in the bacpac file and
+NB a bacpac file is simply a zip archive of other files and that the files of interest are the model.xml file and the exported data files under the Data directory.
+
+The commands/tools available consist of:
+
+* bp2col: Extracts column metadata for one or more tables from an unzipped bacpac file
+
+* bp2csv: Extracts one or more tables from an unzipped bacpac file and writes the output to comma-separated file(s)
+
+* bp2ddl: Generates table creation DDL for one or more tables from an unzipped bacpac file
+
+* bp2ora: Extracts one or more tables from an unzipped bacpac file and writes the output to Oracle SQL*Loader control and data files
+
+* bp2pg: Extracts one or more tables from an unzipped bacpac file and writes the output to pg_dump file(s)
+
+NB that these tools all require that the bacpac file has already been unzipped.
+
+
+Common flags used by the tools are:
+
+```
+
+    -b Base directory containg the unzipped bacpac file.
+
+    -c The number of rows of data to extract per table (bp2csv, bp2ora, bp2pg). Defaults to extracting all rows of data.
+
+    -d The SQL dialect to output (bp2ddl). Valid dialects are Ora (Oracle), Pg (Postresql), and Std (Standard).
+
+    -e The column meta-data exceptions file to use (should there be a need).
+
+    -f The file to read that contains the names of the tables to extract (the tables are listed one per line).
+
+    -t The name of the table to extract.
+
+    -w The number of parallel workers to use (bp2ora only) for extracting the data.
+
+```
+
+# Column meta-data exceptions
+
+There are sometimes issues when extracting the data from the bacpac due
+to the data being stored slightly differently from what the data model
+indicates. When this happens the extraction will crash shortly after
+encountering one of the anomolies. In that it is unknown how to predict
+where the anomolies will be found there is support for overriding the
+model meta-data to help the data extraction do the right thing.
+
+Examples of the issues seen so far
+
+ 1. The first issue is of a not-null char column not parsing the same
+ as all the other not-null char columns. When a char column is defined
+ as not nullable then the typical behavior is to not insert the "size
+ bytes" data as it is not needed. However, in one of the tables tested
+ a a not-null char column also has size bytes data. The code attempts
+ to, and (so far) mostly succeeds, in mitigating this behavior without
+ needing to use any meta-data exceptions.
+
+ 2. The second issue involves the datafile sometimes having six null
+ (0x00) bytes inserted between the size bytes and data bytes of varchar
+ columns. Since no string data should start with null bytes this issue
+ appears to have a straight-forward mmitigation. This behavior has been
+ observed in two to three of the 200+ tables tested. Fortunately, this
+ issue is managed by the data extraction code without need for using
+ meta-data exceptions.
+
+ 3. The third issue appears to involve inserting a set of six 0xff
+ bytes before not-null integer columns. This behavior has been observed
+ in 3 of the 200+ tables tested. Programatically identifying and
+ mitigating this issue has, so far, proved more difficult than the
+ first two issues.
+
+ 4. The forth issue found is similar to the first in that a not-null
+ column has size bytes-- in this case it is the bit datatype.
+
+An example exceptions file is included under the cmd directory (see
+colExceptionsExample.json). The file consists of a JSON array of one or
+more exceptions, one exception per problematic column. While most of
+the elements in the file should be self explanatory the isAdulterated
+element is not-- this element is currently only used for indicating
+those integer columns that exhibit the behavior in issue three above.
+
+It should be noted that the tested bacpac files apparently do load
+correctly into MS SQL-Server such that these issues aren't visible to
+MS SQL-Server environments. Whether this is due to buggy behavior in
+the bacpac exporting code that the bacpac importing code is able work
+around, or whether this is intentional (anti-competitive?) behavior I
+cannot say although MS history impies that it could be either or both.
+
+To assist troubleshooting these anomolies the debugFlag in the
+bactract/main.go file can be set to true and the extraction command can
+be re-compiled. When this is done then the data extraction spews to
+STDOUT information indicating what and how things are being parsed.
+This output can then be used to determine which column is causing the
+parsing to go bad.
+
+# Supported datatypes
+
+Based on reverse engineering existing bacpac files, this is only able
+to support those datatypes that exist in the bacpac files that have
+been available to date.
+
+Of the possible datatypes, those that exist in the bacpac files and
 appear to have sufficient data to be able to properly extract/translate
 the data consist of:
 
@@ -33,206 +128,10 @@ the data consist of:
  * varbinary (parse only?)
  * varchar
 
-Note that the CollationLcid for the studied bacpac file is 1033 and that
-it is unknown what impact other collations might have on the parsing and
-interpreting of bacpack file data.
+NB that the CollationLcid for the bacpac files examined is 1033 and
+that it is unknown what impact other collations might have on the
+parsing and interpreting of bacpack file data.
 
-Also note that this is based on an already un-zipped bacpac file. Writing
+NB these tools require an already un-zipped bacpac file. Writing the
 tools to work with the zipped bacpac file was considered out of scope and
 not really necessary.
-
-# Testing
-
-## System
-
-Testing on an older Dell Optiplex 780 desktop
-
- * OS:
-
-        $ cat /etc/redhat-release
-
-            CentOS release 6.10 (Final)
-
- * CPU:
-
-        $ cat /proc/cpuinfo | grep 'model name' | sort -u
-
-            Intel(R) Core(TM)2 Duo CPU     E8500  @ 3.16GHz
-
-        $ cat /proc/cpuinfo | grep 'model name' | wc -l
-
-            2
-
- * RAM:
-
-        $ cat /proc/meminfo | grep MemTotal
-
-            MemTotal:        3922536 kB
-
- * Disk:
-
-        320 GB, 7200 rpm, formatted as ext3
-
-## Bacpac
-
- * The bacpac file was/is actually a zip archive.
-
-        $ file $bacpac
-
-            $bacpac: Zip archive data, at least v2.0 to extract
-
- * Rather than deal directly with the zip file, the file was first unzipped.
-
-        $ mkdir extracted
-        $ pushd extracted
-        $ unzip ../$bacpac
-        $ popd
-
- * The majority of the bacpac is the exported data so ~1.2 GB of data available for extract.
-
-         $ du -sh $bacpac extracted
-
-            90M     $bacpac
-            1.2G    extracted
-
- * There are 97 tables of interest totaling ~1.1 GB of data to extract.
-
-        $ ls extracted/Data/ | grep -P '\.(d|r)' | wc -l > tables
-
-        $ wc -l tables
-
-            97 tables
-
-## Performance
-
- * Using a simple file copy to establish a base line.
-
-        $ time cp -a extracted tmp
-
-            real    0m34.875s
-            user    0m0.047s
-            sys     0m2.608s
-
- * bp2csv
-
-        $ time ../bp2csv -f ../tables -b ../extracted
-
-            real    5m10.108s
-            user    5m13.833s
-            sys     0m3.986s
-
- * bp2pg
-
-        $ time ../bp2pg -f ../tables -b ../extracted
-
-            real    5m6.455s
-            user    5m3.661s
-            sys     0m5.394s
-
- * bp2ora
-
-        $ time ../bp2ora -f ../tables -b ../extracted
-
-            real    4m41.978s
-            user    4m49.621s
-            sys     0m4.542s
-
-It should be noted that bp2ora doesn't spend time on escaping
-characters while bp2csv and bp2pg do, which may explain the performance
-difference when running bp2ora. It should also be noted that it took
-slightly longer to run the SQL*Loader files than it did to create them.
-
-Percent CPU while running was pretty consistent for all three cmds,
-bouncing around just above 100%, while percent memory was consistently
-at 1.3%.
-
-Typical ```top``` output looks like:
-
-        $ top
-
-            top - 09:15:05 up 5 days, 17:27,  9 users,  load average: 0.31, 0.12, 0.16
-            Tasks: 199 total,   1 running, 198 sleeping,   0 stopped,   0 zombie
-            Cpu(s): 58.3%us,  1.7%sy,  0.0%ni, 40.0%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st
-            Mem:   3922536k total,  3772840k used,   149696k free,   170944k buffers
-            Swap:  2046972k total,    18356k used,  2028616k free,  2171020k cached
-
-              PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
-
-            32689 gsiems    20   0 54860  49m 1740 S 100.7  1.3   1:15.42 bp2csv
-
-            12787 gsiems    20   0 53804  48m 1460 R 103.7  1.3   4:25.99 bp2pg
-
-             8722 gsiems    20   0 55916  50m 1760 S 111.7  1.3   0:16.41 bp2ora
-
-## Accuracy
-
-The data in the bacpac file started out in Oracle and was migrated to
-MS SQL-Server. Therefore, using bp2ora to reload the data into a
-separate Oracle schema and comparing the results should serve as a
-reasonable test for determining how accurately the data was extracted
-from the bacpac file. Having done just that, and accounting for variations
-resulting from the migration (and migration testing) to SQL-Server, the
-data does appear to have been accurately extracted from the bacpac file.
-
-# Issues
-
-Current testing uses three different bacpac files for a toal of just
-over 200 tables; most small but some with millions, or tens of millions
-of rows. This mostly just works, however there have been some problems
-identified with parsing a handful of tables based on the few bacpac files
-available for testing.
-
- 1. The first issue is of a not-null char column not parsing the same
- as all the other not-null char columns. When a char column is defined
- as not nullable then the typical behavior is to not insert the "size
- bytes" data as it is not needed. However, in there is one table where
- a not-null char column also has size bytes data. The code attempts
- to, and so far succeeds, in mitigating this behavior.
-
- 2. The second issue involves sometimes inserting six null (0x00) bytes
- between the size bytes and data bytes of varchar columns. Since no
- string data should start with null bytes this issue appears to have a
- straight-forward mmitigation. This behavior has been observed in two
- to three of the 200+ tables.
-
- 3. The third issue appears to involve inserting a set of six 0xff
- bytes before not-null integer columns. This behavior has been observed
- in 3 of the 200+ tables. Programatically identifying and mitigating
- this issue has, so far, proved more difficult than the first two
- issues.
-
-It should be noted that thes bacpac files apparently do load correctly
-into MS SQL-Server such that these issues aren't visible to MS
-SQL-Server environments. Whether this is due to buggy behavior in the
-bacpac exporting code that the bacpac importing code is able work
-around, or whether this is intentional (anti-competitive?) behavior I
-cannot say although MS history impies that it could be either or both.
-
-# Conclusions
-
- * Extracting data from bacpac files is feasible-- for non-MS
-    SQL-Server shops it can even be practical.
-
- * Memory usage is not a bottleneck/constraint.
-
- * Disk I/O is not currently the primary bottleneck/constraint.
-
- * CPU appears to be the current bottleneck/constraint.
-
- * Adding a work queue, sorted by descending table size, with multiple
-    workers could speed up the data extraction significantly (if needed
-    or desired). Given enough CPU cores, this could move the process to
-    be fully I/O constrained.
-
-# Next steps
-
-...if any.
-
- * Test with more/different bacpac files.
- * Add support for the missing/not-fully-implemented datatypes.
- * Create a cmd to extract the DDL for creating tables.
-
-# FAQ
-
- * Why bacpac files? Because that appears to the primary means of getting data into/out of Azure.
- * But aren't bacpac files inconsistent? So I've read...
