@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"runtime/pprof"
+	"sort"
 	"strings"
 
 	//
@@ -27,8 +28,8 @@ func main() {
 	var v params
 
 	flag.StringVar(&v.baseDir, "b", "", "The directory containing the unzipped bacpac file.")
-	flag.StringVar(&v.tableName, "t", "", "The table to extract data from. When not specified then extract all tables")
-	flag.StringVar(&v.tablesFile, "f", "", "The file to read the list of tables to extract from, one table per line")
+	flag.StringVar(&v.tableName, "t", "", "The table to extract column meta-data from. When not specified then extract column meta-data from all tables")
+	flag.StringVar(&v.tablesFile, "f", "", "The file to read the list of tables to extract column meta-data from, one table per line")
 	var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
 	flag.Parse()
@@ -71,6 +72,7 @@ func doDump(v params) {
 		for t, _ := range model.Tables {
 			tables = append(tables, t)
 		}
+		sort.Strings(tables)
 	}
 
 	fmt.Println(strings.Join([]string{"table_schema",
@@ -114,32 +116,16 @@ func doDump(v params) {
 }
 
 func isChar(dt string) (b bool) {
-	if dt == "char" {
-		return true
-	}
-	if dt == "varchar" {
-		return true
-	}
-	if dt == "text" {
-		return true
-	}
-	if dt == "nchar" {
-		return true
-	}
-	if dt == "nvarchar" {
-		return true
-	}
-	if dt == "ntext" {
+	switch dt {
+	case "char", "varchar", "text", "nchar", "nvarchar", "ntext":
 		return true
 	}
 	return false
 }
 
 func isBinary(dt string) (b bool) {
-	if dt == "binary" {
-		return true
-	}
-	if dt == "varbinary" {
+	switch dt {
+	case "binary", "varbinary":
 		return true
 	}
 	return false
