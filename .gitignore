@@ -17,6 +17,8 @@
 *.ctl
 
 # Compiled cmd tools
+cmd/bp2col
 cmd/bp2csv
+cmd/bp2ddl
 cmd/bp2ora
 cmd/bp2pg
