@@ -21,6 +21,9 @@ type params struct {
 	baseDir    string
 	tableName  string
 	tablesFile string
+	cpuprofile string
+	memprofile string
+	debug      bool
 }
 
 func main() {
@@ -30,12 +33,13 @@ func main() {
 	flag.StringVar(&v.baseDir, "b", "", "The directory containing the unzipped bacpac file.")
 	flag.StringVar(&v.tableName, "t", "", "The table to extract column meta-data from. When not specified then extract column meta-data from all tables")
 	flag.StringVar(&v.tablesFile, "f", "", "The file to read the list of tables to extract column meta-data from, one table per line")
-	var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+	flag.StringVar(&v.cpuprofile, "cpuprofile", "", "The filename to write cpu profile information to")
+	//flag.StringVar(&v.memprofile, "memprofile", "", The filename to write memory profile information to")
 
 	flag.Parse()
 
-	if *cpuprofile != "" {
-		f, err := os.Create(*cpuprofile)
+	if v.cpuprofile != "" {
+		f, err := os.Create(v.cpuprofile)
 		if err != nil {
 			log.Fatal(err)
 		}

@@ -25,6 +25,9 @@ type params struct {
 	tableName  string
 	tablesFile string
 	dialect    int
+	cpuprofile string
+	memprofile string
+	debug      bool
 }
 
 func main() {
@@ -36,7 +39,8 @@ func main() {
 	flag.StringVar(&dialect, "d", "Std", "The DDL dialect to output [Ora|Pg|Std].")
 	flag.StringVar(&v.tableName, "t", "", "The table to generate the CREATE TABLE command for. When not specified then generate the DDL for all tables.")
 	flag.StringVar(&v.tablesFile, "f", "", "The file to read the list of tables to extract from, one table per line")
-	var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+	flag.StringVar(&v.cpuprofile, "cpuprofile", "", "The filename to write cpu profile information to")
+	//flag.StringVar(&v.memprofile, "memprofile", "", The filename to write memory profile information to")
 
 	flag.Parse()
 
@@ -49,8 +53,8 @@ func main() {
 		v.dialect = parser.StandardSQL
 	}
 
-	if *cpuprofile != "" {
-		f, err := os.Create(*cpuprofile)
+	if v.cpuprofile != "" {
+		f, err := os.Create(v.cpuprofile)
 		if err != nil {
 			log.Fatal(err)
 		}
