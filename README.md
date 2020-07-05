@@ -4,7 +4,9 @@ Extract data from MS SQL-Server bacpac files (BACpac-exTRACT).
 
 A bacpac file is a means of getting data out of Azure MS SQL-Server instances.
 
-NB a bacpac file is simply a zip archive of other files and that the files of interest are the model.xml file and the exported data files under the Data directory.
+NB a bacpac file is simply a zip archive of other files and that the
+files of interest are the model.xml file and the exported data files
+under the Data directory.
 
 The commands/tools available consist of:
 
@@ -25,19 +27,25 @@ Common flags used by the tools are:
 
 ```
 
-    -b Base directory containg the unzipped bacpac file.
+    -b Base directory containing the unzipped bacpac file.
 
-    -c The number of rows of data to extract per table (bp2csv, bp2ora, bp2pg). Defaults to extracting all rows of data.
+    -c The number of rows of data to extract per table (bp2csv, bp2ora,
+        bp2pg). Defaults to extracting all rows of data.
 
-    -d The SQL dialect to output (bp2ddl). Valid dialects are Ora (Oracle), Pg (Postresql), and Std (Standard).
+    -d The SQL dialect to output (bp2ddl). Valid dialects are
+        Ora (Oracle), Pg (Postresql), and Std (Standard).
 
     -e The column meta-data exceptions file to use (should there be a need).
 
-    -f The file to read that contains the names of the tables to extract (the tables are listed one per line).
+    -f The file to read that contains the names of the tables to
+        extract (the tables are listed one per line).
 
     -t The name of the table to extract.
 
-    -w The number of parallel workers to use (bp2ora only) for extracting the data.
+    -w The number of parallel workers to use (bp2ora only) for
+        extracting the data.
+
+    -debug Write debugging information to STDOUT (bp2csv, bp2ora, bp2pg).
 
 ```
 
@@ -91,12 +99,44 @@ the bacpac exporting code that the bacpac importing code is able work
 around, or whether this is intentional (anti-competitive?) behavior I
 cannot say although MS history impies that it could be either or both.
 
-To assist troubleshooting these anomolies the debugFlag in the
-bactract/main.go file can be set to true and the extraction command can
-be re-compiled. When this is done then the data extraction spews to
-STDOUT information indicating what and how things are being parsed.
-This output can then be used to determine which column is causing the
-parsing to go bad.
+Running the command with the debug flag set can be used to assist in
+troubleshooting these anomolies if/when they occur where the
+information is written to STDOUT and is very verbose. As each column of
+data is read the column meta-data, the steps taken in parsing it, and a
+synopsis of the read data is output. The following example shows the
+results of parsing two columns from one row of data. Each column is
+separated by a blank line. The first line of output contains the column
+meta-data (columnName, dataType, Length, Precision, Scale, and
+isNullable). The followup lines detail the function used to read the
+data, reading of storage bytes (nullable columns only), reading of data
+bytes, a synopsis of the data (hex-dump and plain text) extracted, and
+whether the column was null or not.
+
+```
+"column_name" int 0, 0, 0, true
+Func readInteger
+readStoredSize: Attempting to read 1 bytes
+Bytes: 0x04
+readInteger: Attempting to read 4 bytes
+Bytes: 0x8a 0x25 0x00 0x00
+Str: 9610
+IsNull: false
+
+"column_name" varchar 1500, 0, 0, true
+Func readString
+readStoredSize: Attempting to read 2 bytes
+Bytes: 0xc0 0x03
+readString: Attempting to read 960 bytes
+Bytes: 0x4c 0x00 0x69 0x00 0x63 0x00 0x65 0x00 0x6e 0x00 0x73 0x00 0x65 0x00 0x65 0x00 0x20 0x00 0x6d 0x00 0x6f 0x00 0x64 0x00  ... 0x65 0x00 0x2e 0x00
+Str: Licensee modifications t ... nce.
+IsNull: false
+
+```
+
+NB changing the code to allow enabling debug via command-line flag does
+impose a ~4% penalty on performance even when not used (edit
+bactrac/main.go to completely disable this and get that performance
+back).
 
 # Supported datatypes
 
