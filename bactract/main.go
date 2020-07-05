@@ -7,7 +7,9 @@ import (
 	"os"
 )
 
-const debugFlag = false // Whether or not to spew debugging information to STDOUT
+// To disable debug: toggle the following two lines and edit the SetDebug function
+var debugFlag bool //= false // Whether or not to spew debugging information to STDOUT
+//const debugFlag = false     // Trim the length of byte arrays and strings when outputting debug information
 const debugLen = 30     // Trim the length of byte arrays and strings when outputting debug information
 
 // Note that this is an incomplete (I think) list of the possible
@@ -52,8 +54,13 @@ type Bacpac struct {
 // New returns a new Bacpac
 func New(baseDir string) (b Bacpac, err error) {
 	b.baseDir = baseDir
+debugFlag = false
 
 	return b, err
+}
+
+func (b Bacpac) SetDebug(debug bool) () {
+	debugFlag = debug
 }
 
 // ExportedTables returns the list of data containing tables found in the bacpac
