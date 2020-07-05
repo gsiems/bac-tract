@@ -128,13 +128,13 @@ func (r *tReader) ReadNextRow() (row []ExtractedColumn, err error) {
 			ec.DtStr = tc.DtStr
 
 			if debugFlag {
-				debOut(fmt.Sprintf("IsNull: %v", ec.IsNull))
 				if len(ec.Str) > debugLen && debugLen > 10 {
 					s := fmt.Sprintf("%s ... %s", ec.Str[0:debugLen-6], ec.Str[len(ec.Str)-4:])
 					debOut(fmt.Sprintf("Str: %s", s))
 				} else {
 					debOut(fmt.Sprintf("Str: %s", ec.Str))
 				}
+				debOut(fmt.Sprintf("IsNull: %v", ec.IsNull))
 				debOut("")
 			}
 
