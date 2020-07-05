@@ -25,6 +25,9 @@ type params struct {
 	tablesFile        string
 	colExceptionsFile string
 	rowLimit          uint64
+	cpuprofile        string
+	memprofile        string
+	debug             bool
 }
 
 func main() {
@@ -36,13 +39,14 @@ func main() {
 	flag.StringVar(&v.colExceptionsFile, "e", "", "The column exceptions data file, should there be one")
 	flag.StringVar(&v.tablesFile, "f", "", "The file to read the list of tables to extract from, one table per line")
 	flag.Uint64Var(&v.rowLimit, "c", 0, "The number of rows to extract. When 0 extract all rows.")
-	var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
-	//var memprofile = flag.String("memprofile", "", "write memory profile to this file")
+	flag.BoolVar(&v.debug, "debug", false, "Write debug information to STDOUT.")
+	flag.StringVar(&v.cpuprofile, "cpuprofile", "", "The filename to write cpu profile information to")
+	//flag.StringVar(&v.memprofile, "memprofile", "", The filename to write memory profile information to")
 
 	flag.Parse()
 
-	if *cpuprofile != "" {
-		f, err := os.Create(*cpuprofile)
+	if v.cpuprofile != "" {
+		f, err := os.Create(v.cpuprofile)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -59,6 +63,8 @@ func main() {
 func doDump(v params) {
 
 	p, _ := bp.New(v.baseDir)
+
+	p.SetDebug(v.debug)
 
 	model, err := p.GetModel(v.colExceptionsFile)
 	dieOnErrf("GetModel failed: %q", err)

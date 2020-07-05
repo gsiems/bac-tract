@@ -20,12 +20,15 @@ import (
 )
 
 type params struct {
-	baseDir    string
-	tableName  string
-	tablesFile string
+	baseDir           string
+	tableName         string
+	tablesFile        string
 	colExceptionsFile string
-	rowLimit   uint64
-	workers    int
+	rowLimit          uint64
+	workers           int
+	cpuprofile        string
+	memprofile        string
+	debug             bool
 }
 
 type workItem struct {
@@ -72,11 +75,13 @@ func main() {
 	flag.StringVar(&v.tablesFile, "f", "", "The file to read the list of tables to extract from, one table per line")
 	flag.Uint64Var(&v.rowLimit, "c", 0, "The number of rows to extract. When 0 extract all rows.")
 	flag.IntVar(&v.workers, "w", 1, "The number of workers to use")
-	var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+	flag.BoolVar(&v.debug, "debug", false, "Write debug information to STDOUT.")
+	flag.StringVar(&v.cpuprofile, "cpuprofile", "", "The filename to write cpu profile information to")
+	//flag.StringVar(&v.memprofile, "memprofile", "", The filename to write memory profile information to")
 	flag.Parse()
 
-	if *cpuprofile != "" {
-		f, err := os.Create(*cpuprofile)
+	if v.cpuprofile != "" {
+		f, err := os.Create(v.cpuprofile)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -117,6 +122,8 @@ func main() {
 func getTables(v params) (l []bp.Table) {
 
 	p, _ := bp.New(v.baseDir)
+
+	p.SetDebug(v.debug)
 
 	model, err := p.GetModel(v.colExceptionsFile)
 	dieOnErrf("GetModel failed: %q", err)
