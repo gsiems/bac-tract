@@ -449,6 +449,9 @@ func (bp Bacpac) extractTables(doc DataSchemaModel, exceptions ColumnExceptions)
 					n := re.Element.Relationship.Entry.References.Name
 					col.DtStr = normalizeQN(n)
 
+					// cleanup the sys.<datatype>s
+					col.DtStr = strings.TrimPrefix(col.DtStr, "sys.")
+
 					ut, ok := userTypes[col.DtStr]
 					if ok {
 						col.DtStr = ut.DtStr
