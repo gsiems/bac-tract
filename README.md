@@ -149,13 +149,14 @@ appear to have sufficient data to be able to properly extract/translate
 the data consist of:
 
  * bigint
- * binary (parse only?)
+ * binary (parse only)
  * bit
  * char
  * datetime2
  * datetime
  * decimal
  * float
+ * geography (parse only)
  * int
  * ntext
  * nvarchar
@@ -165,7 +166,7 @@ the data consist of:
  * smallmoney
  * text
  * tinyint
- * varbinary (parse only?)
+ * varbinary (parse only)
  * varchar
 
 NB that the CollationLcid for the bacpac files examined is 1033 and
