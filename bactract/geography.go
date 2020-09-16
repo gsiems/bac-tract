@@ -92,7 +92,7 @@ func readGeography(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
 		ec.Str = fmt.Sprintf("SRID=%d;POINT(%f %f)", srid, long, lat)
 
-	case ss.ByteCount > 22:
+	case ss.byteCount > 22:
 
 		// case ( ss.ByteCount - 6 ) % 16 == 0: // list of points ?
 
