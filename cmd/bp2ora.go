@@ -201,7 +201,7 @@ func mkLoaderDat(t bp.Table, v params) (err error) {
 				w.Write(colSep)
 			}
 
-			if ( ec.DataType != bp.Varbinary || ec.DataType != bp.Geography ) && !ec.IsNull {
+			if ec.DataType != bp.Varbinary && !ec.IsNull {
 				w.Write([]byte(ec.Str))
 			}
 		}

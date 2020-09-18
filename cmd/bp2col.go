@@ -129,7 +129,7 @@ func isChar(dt string) (b bool) {
 
 func isBinary(dt string) (b bool) {
 	switch dt {
-	case "binary", "varbinary", "geography":
+	case "binary", "varbinary":
 		return true
 	}
 	return false

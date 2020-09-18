@@ -91,7 +91,7 @@ func doDump(v params) {
 		if ok {
 			hasBinary := false
 			for _, c := range t.Columns {
-				if c.DataType == bp.Binary || c.DataType == bp.Varbinary || c.DataType == bp.Geography {
+				if c.DataType == bp.Binary || c.DataType == bp.Varbinary {
 					hasBinary = true
 				}
 			}
