@@ -28,16 +28,16 @@ func readBinary(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 		return
 	}
 
-	var b []byte
+	//var b []byte
 	if ss.byteCount > 0 {
 		// Read and translate the binary
 		// TODO
-		b, err = r.readBytes(fn, ss.byteCount)
+		_, err = r.readBytes(fn, ss.byteCount)
 		if err != nil {
 			return
 		}
 
-		ec.Str = string(b)
+		//ec.Str = string(b)
 	}
 	return
 }

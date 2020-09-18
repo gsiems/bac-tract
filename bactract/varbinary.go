@@ -24,11 +24,11 @@ func readVarbinary(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
 	// Read and translate the varbinary
 	// TODO
-	b, err := r.readBytes(fn, ss.byteCount)
+	_, err = r.readBytes(fn, ss.byteCount)
 	if err != nil {
 		return
 	}
 
-	ec.Str = string(b)
+	//ec.Str = string(b)
 	return
 }
