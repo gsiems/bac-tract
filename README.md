@@ -156,7 +156,7 @@ the data consist of:
  * datetime
  * decimal
  * float
- * geography (parse only)
+ * geography (parse, translate point types to WKT-ish form)
  * int
  * ntext
  * nvarchar
