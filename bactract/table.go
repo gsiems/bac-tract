@@ -49,6 +49,7 @@ var dt = map[int]fn{
 	Float:         readFloat,
 	Geography:     readGeography,
 	Int:           readInteger,
+	Money:         readMoney,
 	NText:         readNText,
 	Numeric:       readDecimal,
 	NVarchar:      readNVarchar,

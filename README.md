@@ -158,6 +158,7 @@ the data consist of:
  * float
  * geography (parse, translate point types to WKT-ish form)
  * int
+ * money
  * ntext
  * nvarchar
  * real
