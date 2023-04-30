@@ -7,6 +7,8 @@ import (
 // readSmallMoney reads the value for a small money column
 func readSmallMoney(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
+	// NB: Internally stored as an integer
+	// Range from –214,748.3648 to 214,748.3647
 	fn := "readSmallMoney"
 	defSz := 4
 	if debugFlag {
@@ -42,6 +44,7 @@ func readSmallMoney(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) 
 		z |= int32(sb) << uint(8*i)
 	}
 
+	// Adjust the decimal point
 	sb := []byte(fmt.Sprint(z))
 	j := len(sb) - 4
 	if j > 0 {
