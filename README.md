@@ -2,7 +2,7 @@
 
 Extract data from MS SQL-Server bacpac files (BACpac-exTRACT).
 
-A bacpac file is a means of getting data out of Azure MS SQL-Server instances.
+A bacpac file is a means of getting data out of MS SQL-Server instances.
 
 NB a bacpac file is simply a zip archive of other files and that the
 files of interest are the model.xml file and the exported data files
@@ -140,13 +140,13 @@ back).
 
 # Supported datatypes
 
-Based on reverse engineering existing bacpac files, this is only able
-to support those datatypes that exist in the bacpac files that have
-been available to date.
+Most of the supported datatypes are based on reverse engineering existing
+bacpac files where there is sufficient data to be able to properly
+extract/translate the data. Other supported datatypes rely on there being
+sufficient information found to reasonably attempt extracting/translating
+the data.
 
-Of the possible datatypes, those that exist in the bacpac files and
-appear to have sufficient data to be able to properly extract/translate
-the data consist of:
+Supported datatypes consist of:
 
  * bigint
  * binary (parse only)
@@ -164,9 +164,10 @@ the data consist of:
  * real
  * smalldatetime
  * smallint
- * smallmoney
+ * smallmoney (have no suitable bacpac for testing)
  * text
  * tinyint
+ * uniqueidentifier (have no suitable bacpac for testing)
  * varbinary (parse only)
  * varchar
 

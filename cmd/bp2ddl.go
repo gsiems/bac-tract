@@ -194,29 +194,30 @@ func convDatatype(dt string, len, precision, scale, dialect int) string {
 func stdType(dt string, len int) string {
 
 	var typeMap = map[string]string{
-		"bigint":         "bigint",
-		"binary":         "blob",
-		"bit":            "boolean",
-		"char":           "character",
-		"date":           "date",
-		"datetime2":      "timestamp",
-		"datetime":       "timestamp",
-		"datetimeoffset": "timestamp with timezone",
-		"decimal":        "decimal",
-		"float":          "float",
-		"int":            "int",
-		"money":          "decimal",
-		"nchar":          "national character",
-		"ntext":          "nclob",
-		"nvarchar":       "national character varying",
-		"real":           "real",
-		"smalldatetime":  "timestamp",
-		"smallint":       "smallint",
-		"smallmoney":     "decimal",
-		"text":           "clob",
-		"tinyint":        "smallint",
-		"varbinary":      "blob",
-		"varchar":        "character varying",
+		"bigint":           "bigint",
+		"binary":           "blob",
+		"bit":              "boolean",
+		"char":             "character",
+		"date":             "date",
+		"datetime2":        "timestamp",
+		"datetime":         "timestamp",
+		"datetimeoffset":   "timestamp with timezone",
+		"decimal":          "decimal",
+		"float":            "float",
+		"int":              "int",
+		"money":            "decimal",
+		"nchar":            "national character",
+		"ntext":            "nclob",
+		"nvarchar":         "national character varying",
+		"real":             "real",
+		"smalldatetime":    "timestamp",
+		"smallint":         "smallint",
+		"smallmoney":       "decimal",
+		"text":             "clob",
+		"tinyint":          "smallint",
+		"uniqueidentifier": "uuid",
+		"varbinary":        "blob",
+		"varchar":          "character varying",
 	}
 
 	stdtype, ok := typeMap[dt]
@@ -241,7 +242,7 @@ func stdColType(dt string, len, precision, scale int) string {
 	datatype := stdType(dt, len)
 
 	switch datatype {
-	case "boolean", "blob", "clob", "smallint", "int", "bigint", "date", "timestamp", "timestamp with timezone":
+	case "boolean", "blob", "clob", "smallint", "int", "bigint", "date", "timestamp", "timestamp with timezone", "uuid":
 		return datatype
 	}
 
@@ -261,30 +262,31 @@ func stdColType(dt string, len, precision, scale int) string {
 func pgType(dt string, len int) string {
 
 	var typeMap = map[string]string{
-		"bigint":         "bigint",
-		"binary":         "bytea",
-		"bit":            "boolean",
-		"char":           "char",
-		"date":           "date",
-		"datetime2":      "timestamp",
-		"datetime":       "timestamp",
-		"datetimeoffset": "timestamp with timezone",
-		"decimal":        "numeric",
-		"float":          "double precision",
-		"geography":      "varchar",
-		"int":            "int",
-		"money":          "numeric",
-		"nchar":          "char",
-		"ntext":          "varchar",
-		"nvarchar":       "varchar",
-		"real":           "real",
-		"smalldatetime":  "timestamp",
-		"smallint":       "smallint",
-		"smallmoney":     "numeric",
-		"text":           "text",
-		"tinyint":        "smallint",
-		"varbinary":      "bytea",
-		"varchar":        "varchar",
+		"bigint":           "bigint",
+		"binary":           "bytea",
+		"bit":              "boolean",
+		"char":             "char",
+		"date":             "date",
+		"datetime2":        "timestamp",
+		"datetime":         "timestamp",
+		"datetimeoffset":   "timestamp with timezone",
+		"decimal":          "numeric",
+		"float":            "double precision",
+		"geography":        "varchar",
+		"int":              "int",
+		"money":            "numeric",
+		"nchar":            "char",
+		"ntext":            "varchar",
+		"nvarchar":         "varchar",
+		"real":             "real",
+		"smalldatetime":    "timestamp",
+		"smallint":         "smallint",
+		"smallmoney":       "numeric",
+		"text":             "text",
+		"tinyint":          "smallint",
+		"uniqueidentifier": "uuid",
+		"varbinary":        "bytea",
+		"varchar":          "varchar",
 	}
 
 	pgtype, ok := typeMap[dt]
@@ -309,7 +311,7 @@ func pgColType(dt string, len, precision, scale int) string {
 	datatype := pgType(dt, len)
 
 	switch datatype {
-	case "boolean", "bytea", "text", "smallint", "int", "bigint", "date", "timestamp", "timestamp with timezone":
+	case "boolean", "bytea", "text", "smallint", "int", "bigint", "date", "timestamp", "timestamp with timezone", "uuid":
 		return datatype
 	}
 
@@ -329,28 +331,29 @@ func pgColType(dt string, len, precision, scale int) string {
 func oraType(dt string, len int) string {
 
 	var typeMap = map[string]string{
-		"bigint":        "number",
-		"binary":        "raw",
-		"bit":           "number",
-		"char":          "char",
-		"datetime2":     "timestamp",
-		"datetime":      "timestamp",
-		"decimal":       "number",
-		"float":         "float",
-		"geography":     "varchar2",
-		"int":           "number",
-		"money":         "number",
-		"nchar":         "nchar",
-		"ntext":         "nclob",
-		"nvarchar":      "nvarchar2",
-		"real":          "float",
-		"smalldatetime": "date",
-		"smallint":      "number",
-		"smallmoney":    "number",
-		"text":          "clob",
-		"tinyint":       "number",
-		"varbinary":     "blob",
-		"varchar":       "varchar2",
+		"bigint":           "number",
+		"binary":           "raw",
+		"bit":              "number",
+		"char":             "char",
+		"datetime2":        "timestamp",
+		"datetime":         "timestamp",
+		"decimal":          "number",
+		"float":            "float",
+		"geography":        "varchar2",
+		"int":              "number",
+		"money":            "number",
+		"nchar":            "nchar",
+		"ntext":            "nclob",
+		"nvarchar":         "nvarchar2",
+		"real":             "float",
+		"smalldatetime":    "date",
+		"smallint":         "number",
+		"smallmoney":       "number",
+		"text":             "clob",
+		"tinyint":          "number",
+		"uniqueidentifier": "raw(16)",
+		"varbinary":        "blob",
+		"varchar":          "varchar2",
 	}
 
 	oratype, ok := typeMap[dt]
@@ -400,6 +403,8 @@ func oraColType(dt string, len, precision, scale int) string {
 	switch datatype {
 	case "blob", "clob", "nclob", "raw", "date":
 		return datatype
+	case "raw(16)":
+		return "raw ( 16 )"
 	}
 
 	if precision != 0 && scale != 0 {
