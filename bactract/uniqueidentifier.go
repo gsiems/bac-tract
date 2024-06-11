@@ -19,7 +19,8 @@ func readUniqueIdentifier(r *tReader, tc TableColumn) (ec ExtractedColumn, err e
 	// Determine how many bytes to read
 	defSz := 16
 
-	ss, err := r.readStoredSize(tc, 1, defSz)
+	var ss storedSize
+	ss, err = r.readStoredSize(tc, 1, defSz)
 	if err != nil {
 		return
 	}
@@ -37,7 +38,8 @@ func readUniqueIdentifier(r *tReader, tc TableColumn) (ec ExtractedColumn, err e
 	}
 
 	// Read and translate the GUID
-	b, err := r.readBytes(fn, ss.byteCount)
+	var b []byte
+	b, err = r.readBytes(fn, ss.byteCount)
 	if err != nil {
 		return
 	}

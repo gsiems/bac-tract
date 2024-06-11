@@ -13,7 +13,8 @@ func readNText(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	}
 
 	// Determine how many bytes to read
-	ss, err := r.readStoredSize(tc, 4, 0)
+	var ss storedSize
+	ss, err = r.readStoredSize(tc, 4, 0)
 	if err != nil {
 		return
 	}
@@ -31,7 +32,8 @@ func readNText(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	}
 
 	// Read the chars
-	b, err := r.readBytes(fn, ss.byteCount)
+	var b []byte
+	b, err = r.readBytes(fn, ss.byteCount)
 	if err != nil {
 		return
 	}

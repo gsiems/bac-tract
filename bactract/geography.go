@@ -15,7 +15,8 @@ func readGeography(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	}
 
 	// Determine how many bytes to read
-	ss, err := r.readStoredSize(tc, 8, 0)
+	var ss storedSize
+	ss, err = r.readStoredSize(tc, 8, 0)
 	if err != nil {
 		return
 	}
@@ -71,7 +72,8 @@ func readGeography(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
 	*/
 
-	b, err := r.readBytes(fn, ss.byteCount)
+	var b []byte
+	b, err = r.readBytes(fn, ss.byteCount)
 	if err != nil {
 		return
 	}

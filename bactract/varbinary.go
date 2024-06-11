@@ -11,7 +11,8 @@ func readVarbinary(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	}
 
 	// Determine how many bytes to read
-	ss, err := r.readStoredSize(tc, 8, 0)
+	var ss storedSize
+	ss, err = r.readStoredSize(tc, 8, 0)
 	if err != nil {
 		return
 	}

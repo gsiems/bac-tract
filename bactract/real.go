@@ -16,7 +16,8 @@ func readReal(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	}
 
 	// Determine how many bytes to read
-	ss, err := r.readStoredSize(tc, 1, defSz)
+	var ss storedSize
+	ss, err = r.readStoredSize(tc, 1, defSz)
 	if err != nil {
 		return
 	}
@@ -34,7 +35,8 @@ func readReal(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	}
 
 	// Read and translate the integer
-	b, err := r.readBytes(fn, ss.byteCount)
+	var b []byte
+	b, err = r.readBytes(fn, ss.byteCount)
 	if err != nil {
 		return
 	}

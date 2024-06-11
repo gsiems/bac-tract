@@ -15,7 +15,8 @@ func readDecimal(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 
 	// Determine how many bytes to read
 	// TODO: can the default be determined by the scope/precision? Does it need to be?
-	ss, err := r.readStoredSize(tc, 1, 0)
+	var ss storedSize
+	ss, err = r.readStoredSize(tc, 1, 0)
 	if err != nil {
 		return
 	}
@@ -27,7 +28,8 @@ func readDecimal(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	}
 
 	// Read and translate the decimal
-	b, err := r.readBytes(fn, ss.byteCount)
+	var b []byte
+	b, err = r.readBytes(fn, ss.byteCount)
 	if err != nil {
 		return
 	}

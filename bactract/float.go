@@ -22,7 +22,8 @@ func readFloat(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 		defSz = 8
 	}
 
-	ss, err := r.readStoredSize(tc, 1, defSz)
+	var ss storedSize
+	ss, err = r.readStoredSize(tc, 1, defSz)
 	if err != nil {
 		return
 	}
@@ -40,7 +41,8 @@ func readFloat(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	}
 
 	// Read and translate the integer
-	b, err := r.readBytes(fn, ss.byteCount)
+	var b []byte
+	b, err = r.readBytes(fn, ss.byteCount)
 	if err != nil {
 		return
 	}

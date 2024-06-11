@@ -29,7 +29,8 @@ func readString(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	}
 
 	// Determine how many bytes to read
-	ss, err := r.readStoredSize(tc, sz, defSz)
+	var ss storedSize
+	ss, err = r.readStoredSize(tc, sz, defSz)
 	if err != nil {
 		return
 	}
@@ -55,7 +56,8 @@ func readString(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	}
 
 	// Read the chars
-	b, err := r.readBytes(fn, ss.byteCount)
+	var b []byte
+	b, err = r.readBytes(fn, ss.byteCount)
 	if err != nil {
 		return
 	}
