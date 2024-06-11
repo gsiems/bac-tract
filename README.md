@@ -152,6 +152,7 @@ Supported datatypes consist of:
  * binary (parse only)
  * bit
  * char
+ * date (have no suitable bacpac for testing)
  * datetime2
  * datetime
  * decimal
@@ -166,6 +167,7 @@ Supported datatypes consist of:
  * smallint
  * smallmoney (have no suitable bacpac for testing)
  * text
+ * time (have no suitable bacpac for testing)
  * tinyint
  * uniqueidentifier (have no suitable bacpac for testing)
  * varbinary (parse only)

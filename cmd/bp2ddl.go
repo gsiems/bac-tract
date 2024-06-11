@@ -214,6 +214,7 @@ func stdType(dt string, len int) string {
 		"smallint":         "smallint",
 		"smallmoney":       "decimal",
 		"text":             "clob",
+		"time":             "time",
 		"tinyint":          "smallint",
 		"uniqueidentifier": "uuid",
 		"varbinary":        "blob",
@@ -242,7 +243,7 @@ func stdColType(dt string, len, precision, scale int) string {
 	datatype := stdType(dt, len)
 
 	switch datatype {
-	case "boolean", "blob", "clob", "smallint", "int", "bigint", "date", "timestamp", "timestamp with timezone", "uuid":
+	case "boolean", "blob", "clob", "smallint", "int", "bigint", "date", "time", "timestamp", "timestamp with timezone", "uuid":
 		return datatype
 	}
 
@@ -283,6 +284,7 @@ func pgType(dt string, len int) string {
 		"smallint":         "smallint",
 		"smallmoney":       "numeric",
 		"text":             "text",
+		"time":             "time",
 		"tinyint":          "smallint",
 		"uniqueidentifier": "uuid",
 		"varbinary":        "bytea",
@@ -311,7 +313,7 @@ func pgColType(dt string, len, precision, scale int) string {
 	datatype := pgType(dt, len)
 
 	switch datatype {
-	case "boolean", "bytea", "text", "smallint", "int", "bigint", "date", "timestamp", "timestamp with timezone", "uuid":
+	case "boolean", "bytea", "text", "smallint", "int", "bigint", "date", "time", "timestamp", "timestamp with timezone", "uuid":
 		return datatype
 	}
 
@@ -350,8 +352,9 @@ func oraType(dt string, len int) string {
 		"smallint":         "number",
 		"smallmoney":       "number",
 		"text":             "clob",
+		"time":             "time",
 		"tinyint":          "number",
-		"uniqueidentifier": "raw(16)",
+		"uniqueidentifier": "uuid",
 		"varbinary":        "blob",
 		"varchar":          "varchar2",
 	}
@@ -403,8 +406,10 @@ func oraColType(dt string, len, precision, scale int) string {
 	switch datatype {
 	case "blob", "clob", "nclob", "raw", "date":
 		return datatype
-	case "raw(16)":
+	case "uuid":
 		return "raw ( 16 )"
+	case "time":
+		return "varchar2 ( 16 )"
 	}
 
 	if precision != 0 && scale != 0 {
