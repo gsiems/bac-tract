@@ -245,7 +245,7 @@ type ForeignKey struct {
 
 // Table struct contains the definition for an exported database table
 type Table struct {
-	dataDir string
+	DataDir string
 	Schema  string
 	TabName string
 	PK      UniqueConstraint
@@ -423,7 +423,7 @@ func (bp Bacpac) extractTables(doc DataSchemaModel, exceptions ColumnExceptions)
 		t.TabName = extractQNToken(qtn, 1)
 
 		dd := strings.Join([]string{t.Schema, t.TabName}, ".")
-		t.dataDir = catDir([]string{bp.baseDir, "Data", dd})
+		t.DataDir = catDir([]string{bp.baseDir, "Data", dd})
 
 		for _, relationship := range element.Relationship {
 			if relationship.Name != "Columns" {

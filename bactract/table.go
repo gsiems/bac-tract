@@ -71,7 +71,7 @@ var dt = map[int]fn{
 // DataReader creates a multi-file-reader on the data files for the specified table
 func (t *Table) DataReader() (reader tReader, err error) {
 
-	files, err := ioutil.ReadDir(t.dataDir)
+	files, err := ioutil.ReadDir(t.DataDir)
 	if err == os.ErrNotExist {
 		return reader, nil
 	}
@@ -82,7 +82,7 @@ func (t *Table) DataReader() (reader tReader, err error) {
 	var bcpFiles []string
 	for _, f := range files {
 		if strings.HasSuffix(f.Name(), "BCP") {
-			filename := catDir([]string{t.dataDir, f.Name()})
+			filename := catDir([]string{t.DataDir, f.Name()})
 			bcpFiles = append(bcpFiles, filename)
 		}
 	}
