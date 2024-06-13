@@ -25,9 +25,44 @@ type params struct {
 	tablesFile        string
 	colExceptionsFile string
 	rowLimit          uint64
+	workers           int
 	cpuprofile        string
 	memprofile        string
 	debug             bool
+}
+
+type workItem struct {
+	ID     int
+	V      params
+	Tab    bp.Table
+	doneBy int
+}
+
+type Worker struct {
+	workerID int
+	todo     chan workItem
+	done     chan workItem
+}
+
+func newWorker(workerID int, todo chan workItem, done chan workItem) Worker {
+	return Worker{
+		workerID: workerID,
+		todo:     todo,
+		done:     done,
+	}
+}
+
+func (w Worker) start() {
+	go func() {
+		for {
+			select {
+			case item := <-w.todo:
+				item.doneBy = w.workerID
+				mkFile(item.Tab, item.V)
+				w.done <- item
+			}
+		}
+	}()
 }
 
 func main() {
@@ -39,6 +74,7 @@ func main() {
 	flag.StringVar(&v.colExceptionsFile, "e", "", "The column exceptions data file, should there be one")
 	flag.StringVar(&v.tablesFile, "f", "", "The file to read the list of tables to extract from, one table per line")
 	flag.Uint64Var(&v.rowLimit, "c", 0, "The number of rows to extract. When 0 extract all rows.")
+	flag.IntVar(&v.workers, "w", 1, "The number of workers to use")
 	flag.BoolVar(&v.debug, "debug", false, "Write debug information to STDOUT.")
 	flag.StringVar(&v.cpuprofile, "cpuprofile", "", "The filename to write cpu profile information to")
 	//flag.StringVar(&v.memprofile, "memprofile", "", The filename to write memory profile information to")
@@ -57,10 +93,34 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	doDump(v)
+	tables := getTables(v)
+
+	// create the channels
+	todo := make(chan workItem, len(tables))
+	done := make(chan workItem, 1)
+
+	// start the workers
+	for i := 0; i < v.workers; i++ {
+		worker := newWorker(i, todo, done)
+		worker.start()
+	}
+
+	// feed the work queue
+	for i, table := range tables {
+		item := workItem{ID: i, V: v, Tab: table}
+		todo <- item
+	}
+
+	// wait for/catch the results
+	for range tables {
+		select {
+		case _ = <-done:
+		}
+	}
+
 }
 
-func doDump(v params) {
+func getTables(v params) (l []bp.Table) {
 
 	p, _ := bp.New(v.baseDir)
 
@@ -89,19 +149,22 @@ func doDump(v params) {
 	for _, table := range tables {
 		t, ok := model.Tables[table]
 		if ok {
-			hasBinary := false
-			for _, c := range t.Columns {
-				if c.DataType == bp.Binary || c.DataType == bp.Varbinary {
-					hasBinary = true
-				}
-			}
+			//hasBinary := false
+			//for _, c := range t.Columns {
+			//	if c.DataType == bp.Binary || c.DataType == bp.Varbinary {
+			//		hasBinary = true
+			//	}
+			//}
+			//
+			//if hasBinary {
+			//	log.Printf("Warning: \"%s.%s\" has possible binary data.\n", t.Schema, t.TabName)
+			//}
 
-			if hasBinary {
-				log.Printf("Warning: \"%s.%s\" has possible binary data.\n", t.Schema, t.TabName)
-			}
-			mkFile(t, v)
+			l = append(l, t)
 		}
 	}
+
+	return
 }
 
 func mkFile(t bp.Table, v params) {
@@ -202,8 +265,11 @@ func mkFile(t bp.Table, v params) {
 		}
 		w.Write(recSep)
 	}
-	w.Write(dmpEnd)
-	w.Write([]byte("\n\n"))
+
+	if i > 0 {
+		w.Write(dmpEnd)
+		w.Write([]byte("\n\n"))
+	}
 
 	w.Flush()
 }
