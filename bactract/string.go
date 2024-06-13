@@ -85,21 +85,30 @@ func readString(r *tReader, tc TableColumn) (ec ExtractedColumn, err error) {
 	}
 
 	// HACK: if the column is not null and the leading byte is 0x00 then
-	// we need to unshift and read additional bytes until the first byte
-	// is no longer 0x00. This is to attempt to deal with those (so far
+	// we need to check the leading bytes.
+	// This is to attempt to deal with those (so far
 	// few) tables that insert an extra '0x00 0x00 0x00 0x00 0x00 0x00'
 	// before the actual data of certain columns.
+	// If '0x00 0x00 0x00 0x00 0x00 0x00' is found then we want to shift off
+	// those bytes and append 6 additional bytes.
 	if len(b) > 1 && b[0] == 0x00 {
-		for {
-			if b[0] != 0x00 {
+
+		nCt := 0
+		for _, v := range b {
+			if v != 0x00 {
 				break
 			}
-			nextb, cerr := r.readBytes(fn, 1)
+			nCt++
+		}
+
+		if nCt == 6 {
+			nextb, cerr := r.readBytes(fn, 6)
 			if err != nil {
 				err = cerr
 				return
 			}
-			b = append(b[1:], nextb...)
+
+			b = append(b[6:], nextb...)
 		}
 	}
 
