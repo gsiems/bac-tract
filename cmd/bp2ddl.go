@@ -16,15 +16,14 @@ import (
 	//
 	bp "github.com/gsiems/bac-tract/bactract"
 
-	"github.com/gsiems/sql-parse/sqlparse"
-	parser "github.com/gsiems/sql-parse/sqlparse"
+	"github.com/gsiems/db-dialect/dialect"
 )
 
 type params struct {
 	baseDir    string
 	tableName  string
 	tablesFile string
-	dialect    int
+	dbDialect  dialect.DbDialect
 	cpuprofile string
 	memprofile string
 	debug      bool
@@ -33,10 +32,10 @@ type params struct {
 func main() {
 
 	var v params
-	var dialect string
+	var dd string
 
 	flag.StringVar(&v.baseDir, "b", "", "The directory containing the unzipped bacpac file.")
-	flag.StringVar(&dialect, "d", "Std", "The DDL dialect to output [Ora|Pg|Std].")
+	flag.StringVar(&dd, "d", "Std", "The DDL dialect to output [Ora|Pg|Std].")
 	flag.StringVar(&v.tableName, "t", "", "The table to generate the CREATE TABLE command for. When not specified then generate the DDL for all tables.")
 	flag.StringVar(&v.tablesFile, "f", "", "The file to read the list of tables to extract from, one table per line")
 	flag.StringVar(&v.cpuprofile, "cpuprofile", "", "The filename to write cpu profile information to")
@@ -44,13 +43,10 @@ func main() {
 
 	flag.Parse()
 
-	switch dialect {
-	case "Pg":
-		v.dialect = parser.PostgreSQL
-	case "Ora":
-		v.dialect = parser.Oracle
-	default:
-		v.dialect = parser.StandardSQL
+	d := dialect.StrToDialect(dd)
+	switch d {
+	case dialect.PostgreSQL, dialect.Oracle, dialect.StandardSQL:
+		v.dbDialect = dialect.NewDialect(dd)
 	}
 
 	if v.cpuprofile != "" {
@@ -98,12 +94,12 @@ func doDump(v params) {
 		t, ok := model.Tables[table]
 
 		if ok {
-			fmt.Printf("CREATE TABLE %s.%s (\n    ", formatIdent(t.Schema, v.dialect), formatIdent(t.TabName, v.dialect))
+			fmt.Printf("CREATE TABLE %s.%s (\n    ", formatIdent(t.Schema, v.dbDialect), formatIdent(t.TabName, v.dbDialect))
 			var colDefs []string
 
 			for _, c := range t.Columns {
 
-				colDef := formatIdent(c.ColName, v.dialect) + " " + convDatatype(c.DtStr, c.Length, c.Precision, c.Scale, v.dialect)
+				colDef := formatIdent(c.ColName, v.dbDialect) + " " + convDatatype(c.DtStr, c.Length, c.Precision, c.Scale, v.dbDialect)
 				if c.IsNullable {
 					colDefs = append(colDefs, colDef)
 				} else {
@@ -114,18 +110,18 @@ func doDump(v params) {
 			fmt.Printf("%s", strings.Join(colDefs, ",\n    "))
 
 			// Primary Key
-			pkCols := joinCols(t.PK.Columns, v.dialect)
+			pkCols := joinCols(t.PK.Columns, v.dbDialect)
 			if pkCols != "" {
 				consname := fmt.Sprintf("pk_%s", t.TabName)
-				pk_name := formatIdent(consname, v.dialect)
+				pk_name := formatIdent(consname, v.dbDialect)
 				fmt.Printf(",\n    CONSTRAINT %s PRIMARY KEY ( %s )", pk_name, pkCols)
 			}
 
 			// Unique Constraints
 			for _, c := range t.Unique {
-				uCols := joinCols(c.Columns, v.dialect)
+				uCols := joinCols(c.Columns, v.dbDialect)
 				if uCols != "" {
-					consname := formatIdent(c.ConsName, v.dialect)
+					consname := formatIdent(c.ConsName, v.dbDialect)
 					fmt.Printf(",\n    CONSTRAINT %s UNIQUE ( %s )", consname, uCols)
 				}
 			}
@@ -142,49 +138,49 @@ func doDump(v params) {
 			// Foreign Key Constraints
 			for _, c := range t.FKs {
 
-				fkCols := joinCols(c.Columns, v.dialect)
-				refCols := joinCols(c.RefColumns, v.dialect)
+				fkCols := joinCols(c.Columns, v.dbDialect)
+				refCols := joinCols(c.RefColumns, v.dbDialect)
 
 				rt, ok2 := model.Tables[c.RefTable]
 				if ok2 {
-					fmt.Printf("ALTER TABLE %s.%s\n", formatIdent(t.Schema, v.dialect), formatIdent(t.TabName, v.dialect))
-					fmt.Printf("    ADD CONSTRAINT %s FOREIGN KEY ( %s )\n", formatIdent(c.ConsName, v.dialect), fkCols)
-					fmt.Printf("    REFERENCES %s.%s ( %s ) ;\n\n", formatIdent(rt.Schema, v.dialect), formatIdent(rt.TabName, v.dialect), refCols)
+					fmt.Printf("ALTER TABLE %s.%s\n", formatIdent(t.Schema, v.dbDialect), formatIdent(t.TabName, v.dbDialect))
+					fmt.Printf("    ADD CONSTRAINT %s FOREIGN KEY ( %s )\n", formatIdent(c.ConsName, v.dbDialect), fkCols)
+					fmt.Printf("    REFERENCES %s.%s ( %s ) ;\n\n", formatIdent(rt.Schema, v.dbDialect), formatIdent(rt.TabName, v.dbDialect), refCols)
 				}
 			}
 		}
 	}
 }
 
-func joinCols(cols []string, dialect int) string {
+func joinCols(cols []string, dbDialect dialect.DbDialect) string {
 
 	var cl []string
 	for _, col := range cols {
-		cl = append(cl, formatIdent(col, dialect))
+		cl = append(cl, formatIdent(col, dbDialect))
 	}
 
 	return strings.Join(cl, ", ")
 }
 
-func formatIdent(s string, dialect int) string {
+func formatIdent(s string, dbDialect dialect.DbDialect) string {
 
-	if sqlparse.IsIdentifier(s, dialect) && !sqlparse.IsKeyword(s, dialect) {
+	if dbDialect.IsIdentifier(s) && !dbDialect.IsKeyword(s) {
 		return strings.ToLower(s)
 	}
 
-	if dialect == parser.PostgreSQL {
+	if dbDialect.Dialect() == dialect.PostgreSQL {
 		return fmt.Sprintf("%q", strings.ToLower(s))
 	}
 	return fmt.Sprintf("%q", strings.ToUpper(s))
 
 }
 
-func convDatatype(dt string, len, precision, scale, dialect int) string {
+func convDatatype(dt string, len, precision, scale int, dbDialect dialect.DbDialect) string {
 
-	switch dialect {
-	case parser.PostgreSQL:
+	switch dbDialect.Dialect() {
+	case dialect.PostgreSQL:
 		return pgColType(dt, len, precision, scale)
-	case parser.Oracle:
+	case dialect.Oracle:
 		return oraColType(dt, len, precision, scale)
 	}
 
